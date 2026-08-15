@@ -1,0 +1,174 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+  --font-mono: ui-monospace, "SFMono-Regular", "JetBrains Mono", Menlo,
+    Consolas, monospace;
+
+  /* Marca — dorado ámbar (bar / cerveza / whisky) */
+  --color-brand-50: #fff8ec;
+  --color-brand-100: #feefce;
+  --color-brand-200: #fbd98f;
+  --color-brand-300: #f7c24f;
+  --color-brand-400: #f2ae28;
+  --color-brand-500: #e09612;
+  --color-brand-600: #b9740c;
+  --color-brand-700: #93590e;
+  --color-brand-800: #7a4913;
+  --color-brand-900: #683e15;
+
+  /* Superficies oscuras (sidebar, encabezados) */
+  --color-ink-500: #6b7280;
+  --color-ink-600: #3f4655;
+  --color-ink-700: #2a3040;
+  --color-ink-800: #1a1f2b;
+  --color-ink-850: #141824;
+  --color-ink-900: #0f131c;
+  --color-ink-950: #0a0d14;
+
+  --radius-xl2: 1rem;
+
+  --animate-fade-in: fade-in 0.22s ease-out both;
+  --animate-slide-up: slide-up 0.28s cubic-bezier(0.16, 1, 0.3, 1) both;
+  --animate-scale-in: scale-in 0.2s cubic-bezier(0.16, 1, 0.3, 1) both;
+  --animate-slide-in-right: slide-in-right 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+  --animate-pop: pop 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes scale-in {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: scale(1); }
+}
+@keyframes slide-in-right {
+  from { opacity: 0; transform: translateX(24px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+@keyframes pop {
+  0% { transform: scale(0.8); opacity: 0; }
+  60% { transform: scale(1.06); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+@keyframes pulse-ring {
+  0% { box-shadow: 0 0 0 0 rgb(224 150 18 / 0.45); }
+  70% { box-shadow: 0 0 0 10px rgb(224 150 18 / 0); }
+  100% { box-shadow: 0 0 0 0 rgb(224 150 18 / 0); }
+}
+
+:root {
+  /* Paleta de gráficos (validada para daltonismo sobre superficie clara) */
+  --viz-1: #2a78d6;
+  --viz-2: #eb6834;
+  --viz-3: #1baf7a;
+  --viz-4: #4a3aa7;
+  --viz-grid: #e6e8ec;
+  --viz-axis: #6b7280;
+  color-scheme: light;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  background-color: #f4f5f7;
+  color: #101828;
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Scrollbars discretas */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd2dc transparent;
+}
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+*::-webkit-scrollbar-thumb {
+  background: #cbd2dc;
+  border-radius: 999px;
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* Utilidades de la app.
+   Van en la capa "components" para que cualquier utilidad de Tailwind
+   (bg-*, border-*, rounded-*) pueda sobrescribirlas puntualmente. */
+@layer components {
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .card {
+    background: #fff;
+    border: 1px solid rgb(226 232 240 / 0.9);
+    border-radius: 1rem;
+    box-shadow: 0 1px 2px rgb(16 24 40 / 0.04), 0 1px 3px rgb(16 24 40 / 0.03);
+  }
+
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+
+  .pulse-ring {
+    animation: pulse-ring 2s infinite;
+  }
+
+  .grain {
+    background-image:
+      radial-gradient(circle at 15% 10%, rgb(242 174 40 / 0.16), transparent 45%),
+      radial-gradient(circle at 85% 0%, rgb(42 120 214 / 0.12), transparent 40%);
+  }
+}
+
+/* Impresión: solo el comprobante */
+@media print {
+  body {
+    background: #fff;
+  }
+  .no-print,
+  .no-print * {
+    display: none !important;
+  }
+  .print-overlay {
+    position: absolute !important;
+    inset: 0 !important;
+    display: block !important;
+    background: #fff !important;
+    padding: 0 !important;
+  }
+  .print-area {
+    position: static !important;
+    max-height: none !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    overflow: visible !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+  }
+  .print-sheet {
+    box-shadow: none !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+  }
+}
