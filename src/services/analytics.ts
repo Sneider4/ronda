@@ -1,12 +1,15 @@
 import type {
   BarTable,
   CategoryId,
+  Expense,
+  ExpenseCategoryId,
   PaymentMethod,
   Product,
   Sale,
   StockState,
 } from "@/types";
 import { categories, products as catalog } from "@/data/catalog";
+import { expenseCategories } from "@/data/expenses";
 import { isSameDay, toDate } from "@/lib/format";
 
 /* Todas las pantallas del sistema leen sus cifras de aquí, por eso los
@@ -247,3 +250,201 @@ export const openTables = (tables: BarTable[]) =>
 
 export const openAmount = (tables: BarTable[]) =>
   openTables(tables).reduce((s, t) => s + tableTotal(t), 0);
+
+/* ── Gastos: el otro lado del cuaderno ─────────────────────────────────────*/
+
+const ownerDrawIds = new Set(
+  expenseCategories.filter((c) => c.isOwnerDraw).map((c) => c.id),
+);
+
+export const isOwnerDraw = (e: Expense) => ownerDrawIds.has(e.category);
+
+export const expensesOfDay = (expenses: Expense[], day: Date = new Date()) =>
+  expenses.filter((e) => isSameDay(e.dateISO, day));
+
+export const expensesOfMonth = (expenses: Expense[], day: Date = new Date()) =>
+  expenses.filter((e) => {
+    const d = toDate(e.dateISO);
+    return d.getFullYear() === day.getFullYear() && d.getMonth() === day.getMonth();
+  });
+
+/** Gastos propios del negocio (los retiros de la propietaria van aparte) */
+export const operating = (expenses: Expense[]) =>
+  expenses.filter((e) => !isOwnerDraw(e));
+
+export const sumAmount = (expenses: Expense[]) =>
+  expenses.reduce((s, e) => s + e.amount, 0);
+
+/** Facturas registradas que todavía no se han pagado */
+export const pendingBills = (expenses: Expense[]) =>
+  expenses
+    .filter((e) => e.status === "Pendiente")
+    .sort(
+      (a, b) =>
+        +new Date(a.dueDateISO ?? a.dateISO) - +new Date(b.dueDateISO ?? b.dateISO),
+    );
+
+/** Efectivo que salió de la caja en el día (afecta el arqueo) */
+export const cashOut = (expenses: Expense[], day: Date = new Date()) =>
+  sumAmount(
+    expensesOfDay(expenses, day).filter(
+      (e) => e.paymentMethod === "Efectivo" && e.status === "Pagado",
+    ),
+  );
+
+export interface ExpenseCategoryStat {
+  id: ExpenseCategoryId;
+  name: string;
+  emoji: string;
+  total: number;
+  count: number;
+  share: number;
+}
+
+export function expensesByCategory(expenses: Expense[]): ExpenseCategoryStat[] {
+  const grand = sumAmount(expenses) || 1;
+  return expenseCategories
+    .map((c) => {
+      const rows = expenses.filter((e) => e.category === c.id);
+      const total = sumAmount(rows);
+      return {
+        id: c.id,
+        name: c.name,
+        emoji: c.emoji,
+        total,
+        count: rows.length,
+        share: (total / grand) * 100,
+      };
+    })
+    .filter((c) => c.total > 0)
+    .sort((a, b) => b.total - a.total);
+}
+
+/* ── Balance mensual: "el cuaderno" de la propietaria ──────────────────────*/
+
+export interface DayBalance {
+  date: Date;
+  ventas: number;
+  ventasCount: number;
+  propinas: number;
+  gastos: number;
+  neto: number;
+}
+
+export interface MonthBalance {
+  month: Date;
+  /** Todo lo que entró, incluida la propina */
+  ventaBruta: number;
+  /** Propinas: son del equipo, no del negocio */
+  propinas: number;
+  /** Venta del negocio = bruta - propinas */
+  ventaNegocio: number;
+  descuentos: number;
+  ventasCount: number;
+  unidades: number;
+  /** Gastos del negocio (sin retiros de la propietaria) */
+  gastos: number;
+  retiros: number;
+  /** Lo que queda: venta del negocio - gastos */
+  neto: number;
+  margen: number;
+  dias: DayBalance[];
+  /** Días del mes que ya transcurrieron (para proyectar el cierre) */
+  diasTranscurridos: number;
+  diasDelMes: number;
+  proyeccion: number;
+}
+
+export function monthBalance(
+  sales: Sale[],
+  expenses: Expense[],
+  ref: Date = new Date(),
+  /** Compara solo hasta este día del mes (para enfrentar meses parciales) */
+  throughDay?: number,
+): MonthBalance {
+  const year = ref.getFullYear();
+  const month = ref.getMonth();
+  const first = new Date(year, month, 1);
+  const diasDelMes = new Date(year, month + 1, 0).getDate();
+  const cut = throughDay ?? 31;
+
+  const monthSales = paid(salesOfMonth(sales, ref)).filter(
+    (s) => toDate(s.dateISO).getDate() <= cut,
+  );
+  const monthExpenses = expensesOfMonth(expenses, ref).filter(
+    (e) => toDate(e.dateISO).getDate() <= cut,
+  );
+  const gastosNegocio = operating(monthExpenses);
+  const retiros = monthExpenses.filter(isOwnerDraw);
+
+  const ventaBruta = monthSales.reduce((s, x) => s + x.total, 0);
+  const propinas = monthSales.reduce((s, x) => s + x.tip, 0);
+  const ventaNegocio = ventaBruta - propinas;
+  const gastos = sumAmount(gastosNegocio);
+  const neto = ventaNegocio - gastos;
+
+  const today = new Date();
+  const isCurrentMonth =
+    today.getFullYear() === year && today.getMonth() === month;
+  const diasTranscurridos = Math.min(
+    isCurrentMonth ? today.getDate() : diasDelMes,
+    cut,
+  );
+
+  const dias: DayBalance[] = [];
+  for (let d = 1; d <= diasTranscurridos; d++) {
+    const day = new Date(year, month, d);
+    const daySales = monthSales.filter((s) => isSameDay(s.dateISO, day));
+    const dayVentas = daySales.reduce((s, x) => s + x.total, 0);
+    const dayPropinas = daySales.reduce((s, x) => s + x.tip, 0);
+    const dayGastos = sumAmount(
+      gastosNegocio.filter((e) => isSameDay(e.dateISO, day)),
+    );
+    dias.push({
+      date: day,
+      ventas: dayVentas,
+      ventasCount: daySales.length,
+      propinas: dayPropinas,
+      gastos: dayGastos,
+      neto: dayVentas - dayPropinas - dayGastos,
+    });
+  }
+
+  return {
+    month: first,
+    ventaBruta,
+    propinas,
+    ventaNegocio,
+    descuentos: monthSales.reduce((s, x) => s + x.discount, 0),
+    ventasCount: monthSales.length,
+    unidades: monthSales.reduce(
+      (s, x) => s + x.items.reduce((a, i) => a + i.qty, 0),
+      0,
+    ),
+    gastos,
+    retiros: sumAmount(retiros),
+    neto,
+    margen: ventaNegocio ? (neto / ventaNegocio) * 100 : 0,
+    dias,
+    diasTranscurridos,
+    diasDelMes,
+    proyeccion: diasTranscurridos
+      ? Math.round((neto / diasTranscurridos) * diasDelMes)
+      : 0,
+  };
+}
+
+/** Meses con movimiento, del más reciente al más antiguo */
+export function availableMonths(sales: Sale[]): Date[] {
+  const keys = new Set<string>();
+  for (const s of sales) {
+    const d = toDate(s.dateISO);
+    keys.add(`${d.getFullYear()}-${d.getMonth()}`);
+  }
+  return [...keys]
+    .map((k) => {
+      const [y, m] = k.split("-").map(Number);
+      return new Date(y, m, 1);
+    })
+    .sort((a, b) => +b - +a);
+}

@@ -1,18 +1,21 @@
 import type {
   BarTable,
   CashSession,
+  Expense,
+  ExpenseCategoryId,
   OrderItem,
   PaymentMethod,
   Product,
   Sale,
 } from "@/types";
 import { products as catalog, salesWeight } from "./catalog";
+import { suppliers } from "./expenses";
 
 /* ────────────────────────────────────────────────────────────────────────────
  * Generador determinista de datos de demostración.
- * Usa una semilla fija para que la demo se vea igual en cada carga y para que
- * todas las pantallas (dashboard, ventas, reportes, caja) sean coherentes:
- * todas leen de la MISMA lista de ventas.
+ * Cada función arranca su propio generador con semilla fija: así la demo se ve
+ * igual en cada carga y "Reiniciar demostración" devuelve exactamente el mismo
+ * estado. Todas las pantallas leen de estos mismos datos.
  * ──────────────────────────────────────────────────────────────────────────*/
 
 function mulberry32(seed: number) {
@@ -25,11 +28,15 @@ function mulberry32(seed: number) {
   };
 }
 
-const rand = mulberry32(20260815);
+/** Generador activo: cada create* lo reinicia con su propia semilla. */
+let rand = mulberry32(20260815);
 
-const pick = <T,>(arr: T[]) => arr[Math.floor(rand() * arr.length)];
 const between = (min: number, max: number) =>
   min + Math.floor(rand() * (max - min + 1));
+
+/** Valor aleatorio redondeado a la decena de miles, como se maneja en un bar */
+const around = (base: number, spread: number) =>
+  Math.round((base + (rand() - 0.5) * 2 * spread) / 10000) * 10000;
 
 function weightedPick<T extends string>(entries: [T, number][]): T {
   const total = entries.reduce((s, [, w]) => s + w, 0);
@@ -46,6 +53,11 @@ export function startOfToday(): Date {
   d.setHours(0, 0, 0, 0);
   return d;
 }
+
+/** Días de historial que trae la demo (permite comparar mes contra mes). */
+export const HISTORY_DAYS = 90;
+
+/* ── Ventas ────────────────────────────────────────────────────────────────*/
 
 /** Ventas por día de la semana (0 = domingo) */
 const SALES_PER_WEEKDAY = [22, 9, 10, 14, 20, 30, 34];
@@ -140,12 +152,13 @@ function buildSale(date: Date): Omit<Sale, "number" | "id"> {
   };
 }
 
-/** Historial de los últimos 30 días, terminando con la venta #1048 de hoy. */
+/** Historial de los últimos 90 días, con numeración consecutiva. */
 export function createSales(): Sale[] {
+  rand = mulberry32(20260815);
   const today = startOfToday();
   const drafts: Omit<Sale, "number" | "id">[] = [];
 
-  for (let dayOffset = 29; dayOffset >= 0; dayOffset--) {
+  for (let dayOffset = HISTORY_DAYS - 1; dayOffset >= 0; dayOffset--) {
     const day = new Date(today);
     day.setDate(day.getDate() - dayOffset);
     const count = SALES_PER_WEEKDAY[day.getDay()];
@@ -163,12 +176,247 @@ export function createSales(): Sale[] {
     drafts.push(...dayDrafts);
   }
 
-  // Numeración consecutiva: la última venta de hoy queda en #1048
-  const start = 1048 - drafts.length + 1;
+  const start = 2000;
   return drafts.map((d, i) => ({
     ...d,
     id: `s-${start + i}`,
     number: start + i,
+  }));
+}
+
+/* ── Gastos (salidas de dinero) ────────────────────────────────────────────*/
+
+interface ExpenseDraft {
+  dateISO: string;
+  category: ExpenseCategoryId;
+  description: string;
+  supplier?: string;
+  amount: number;
+  paymentMethod: PaymentMethod;
+  status: "Pagado" | "Pendiente";
+  dueDateISO?: string;
+  employeeId: string;
+}
+
+const at = (day: Date, hour: number, minute: number) => {
+  const d = new Date(day);
+  d.setHours(hour, minute, 0, 0);
+  return d.toISOString();
+};
+
+/**
+ * Gastos típicos de un bar de barrio durante los últimos 90 días:
+ * compras a proveedores, nómina quincenal, arriendo, servicios públicos,
+ * mantenimiento, música de fin de semana y retiros de la propietaria.
+ */
+export function createExpenses(): Expense[] {
+  rand = mulberry32(77030815);
+  const today = startOfToday();
+  const drafts: ExpenseDraft[] = [];
+
+  for (let dayOffset = HISTORY_DAYS - 1; dayOffset >= 0; dayOffset--) {
+    const day = new Date(today);
+    day.setDate(day.getDate() - dayOffset);
+    const dom = day.getDate();
+    const dow = day.getDay();
+    const daysAgo = dayOffset;
+
+    // Compra fuerte de cerveza los martes
+    if (dow === 2) {
+      const pendiente = daysAgo < 5;
+      drafts.push({
+        dateISO: at(day, 10, between(5, 55)),
+        category: "proveedores",
+        description: "Compra de cerveza",
+        supplier: suppliers.cerveza,
+        amount: around(2100000, 380000),
+        paymentMethod: pendiente ? "Transferencia" : "Transferencia",
+        status: pendiente ? "Pendiente" : "Pagado",
+        dueDateISO: pendiente
+          ? at(new Date(day.getTime() + 7 * 86400000), 12, 0)
+          : undefined,
+        employeeId: "e-1",
+      });
+    }
+
+    // Licores y gaseosas los viernes
+    if (dow === 5) {
+      drafts.push({
+        dateISO: at(day, 11, between(5, 55)),
+        category: "proveedores",
+        description: "Compra de licores",
+        supplier: suppliers.licores,
+        amount: around(920000, 190000),
+        paymentMethod: "Efectivo",
+        status: "Pagado",
+        employeeId: "e-1",
+      });
+      drafts.push({
+        dateISO: at(day, 12, between(5, 55)),
+        category: "proveedores",
+        description: "Gaseosas y agua",
+        supplier: suppliers.gaseosas,
+        amount: around(260000, 60000),
+        paymentMethod: "Efectivo",
+        status: "Pagado",
+        employeeId: "e-4",
+      });
+    }
+
+    // Hielo y desechables los sábados
+    if (dow === 6) {
+      drafts.push({
+        dateISO: at(day, 15, between(5, 55)),
+        category: "proveedores",
+        description: "Hielo y desechables",
+        supplier: suppliers.hielo,
+        amount: around(180000, 40000),
+        paymentMethod: "Efectivo",
+        status: "Pagado",
+        employeeId: "e-4",
+      });
+      // Música en vivo / DJ del fin de semana
+      drafts.push({
+        dateISO: at(day, 23, between(10, 50)),
+        category: "eventos",
+        description: "DJ del fin de semana",
+        amount: around(330000, 60000),
+        paymentMethod: "Efectivo",
+        status: "Pagado",
+        employeeId: "e-1",
+      });
+    }
+
+    // Snacks y picada los jueves
+    if (dow === 4) {
+      drafts.push({
+        dateISO: at(day, 13, between(5, 55)),
+        category: "proveedores",
+        description: "Snacks y picada",
+        supplier: suppliers.snacks,
+        amount: around(320000, 70000),
+        paymentMethod: "Efectivo",
+        status: "Pagado",
+        employeeId: "e-1",
+      });
+    }
+
+    // Arriendo del local
+    if (dom === 5) {
+      drafts.push({
+        dateISO: at(day, 9, 15),
+        category: "arriendo",
+        description: "Arriendo del local",
+        amount: 2800000,
+        paymentMethod: "Transferencia",
+        status: "Pagado",
+        employeeId: "e-1",
+      });
+    }
+
+    // Nómina quincenal
+    if (dom === 15 || dom === 30) {
+      drafts.push({
+        dateISO: at(day, 18, 0),
+        category: "nomina",
+        description: `Nómina quincena (${dom === 15 ? "1 al 15" : "16 al 30"})`,
+        amount: around(1900000, 120000),
+        paymentMethod: "Transferencia",
+        status: "Pagado",
+        employeeId: "e-1",
+      });
+    }
+
+    // Servicios públicos
+    if (dom === 8) {
+      drafts.push({
+        dateISO: at(day, 10, 30),
+        category: "servicios",
+        description: "Internet y TV",
+        amount: 119900,
+        paymentMethod: "Transferencia",
+        status: "Pagado",
+        employeeId: "e-1",
+      });
+    }
+    if (dom === 12) {
+      const pendiente = daysAgo < 6;
+      drafts.push({
+        dateISO: at(day, 11, 10),
+        category: "servicios",
+        description: "Energía eléctrica",
+        amount: around(980000, 90000),
+        paymentMethod: "Transferencia",
+        status: pendiente ? "Pendiente" : "Pagado",
+        dueDateISO: pendiente
+          ? at(new Date(day.getTime() + 9 * 86400000), 12, 0)
+          : undefined,
+        employeeId: "e-1",
+      });
+    }
+    if (dom === 18) {
+      drafts.push({
+        dateISO: at(day, 11, 40),
+        category: "servicios",
+        description: "Acueducto y alcantarillado",
+        amount: around(280000, 40000),
+        paymentMethod: "Transferencia",
+        status: "Pagado",
+        employeeId: "e-1",
+      });
+    }
+    if (dom === 22) {
+      drafts.push({
+        dateISO: at(day, 12, 20),
+        category: "servicios",
+        description: "Gas del local",
+        amount: around(95000, 20000),
+        paymentMethod: "Efectivo",
+        status: "Pagado",
+        employeeId: "e-4",
+      });
+    }
+
+    // Mantenimiento ocasional
+    if (rand() < 0.045) {
+      const trabajos = [
+        "Mantenimiento de la nevera",
+        "Reparación del equipo de sonido",
+        "Aseo y fumigación",
+        "Arreglo de sillas y mesas",
+        "Cambio de bombillos y luces",
+      ];
+      drafts.push({
+        dateISO: at(day, between(9, 16), between(0, 59)),
+        category: "mantenimiento",
+        description: trabajos[Math.floor(rand() * trabajos.length)],
+        amount: around(280000, 140000),
+        paymentMethod: "Efectivo",
+        status: "Pagado",
+        employeeId: "e-1",
+      });
+    }
+
+    // Retiro de la propietaria
+    if (dom === 20) {
+      drafts.push({
+        dateISO: at(day, 17, 0),
+        category: "retiros",
+        description: "Retiro de la propietaria",
+        amount: around(2000000, 300000),
+        paymentMethod: "Efectivo",
+        status: "Pagado",
+        employeeId: "e-1",
+      });
+    }
+  }
+
+  drafts.sort((a, b) => +new Date(a.dateISO) - +new Date(b.dateISO));
+
+  return drafts.map((d, i) => ({
+    ...d,
+    id: `g-${600 + i}`,
+    number: 600 + i,
   }));
 }
 
@@ -307,5 +555,3 @@ export function createCashSession(): CashSession {
 export function createProducts(): Product[] {
   return catalog.map((p) => ({ ...p }));
 }
-
-export { pick, between };

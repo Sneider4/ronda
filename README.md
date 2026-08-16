@@ -51,10 +51,14 @@ npm start
    “Corona está por agotarse”, “Whisky Old Parr agotado”. Botón *Reponer*.
 8. **Ventas** — historial filtrable por fecha, método de pago y mesa; cada
    venta abre su comprobante.
-9. **Reportes** — producto más vendido, hora de mayor movimiento, día con
-   mayores ventas, ventas por categoría.
-10. **Caja** — resumen del turno, cuánto efectivo debe haber y **Cerrar caja**
-    con arqueo y diferencia.
+9. **Gastos** — todo lo que sale: compras a proveedores, arriendo, nómina,
+   servicios, música. Con **cuentas por pagar** pendientes.
+10. **Balance del mes** — el cuaderno: cuánto entró, cuánto salió, cuánto
+    quedó, día por día, comparado con el mes anterior.
+11. **Reportes** — producto más vendido, hora de mayor movimiento, día con
+    mayores ventas, ventas por categoría.
+12. **Caja** — resumen del turno, cuánto efectivo debe haber (descontando los
+    gastos pagados en efectivo) y **Cerrar caja** con arqueo y diferencia.
 
 En el menú de usuario (arriba a la derecha) está **Reiniciar datos de la
 demostración** para volver al estado inicial antes de una nueva presentación.
@@ -71,6 +75,8 @@ src/
 │  ├─ inventario/          Existencias y alertas
 │  ├─ productos/           Catálogo (crear, editar, eliminar)
 │  ├─ ventas/              Historial + comprobantes
+│  ├─ gastos/              Salidas de dinero y cuentas por pagar
+│  ├─ balance/             Balance mensual: entró, salió, quedó
 │  ├─ caja/                Cierre de turno
 │  ├─ reportes/            Analítica del negocio
 │  └─ empleados/           Equipo y permisos por rol
@@ -107,7 +113,9 @@ src/
 | Negocio de ejemplo | Bar La Ronda — Bogotá D.C. |
 | Moneda | Pesos colombianos, formato `$ 25.000` |
 | Facturación | **No** hay facturación electrónica ni DIAN: se emite un comprobante interno que lo aclara al pie |
-| Datos | Generados con semilla fija: el historial de 30 días es igual en cada carga |
+| Datos | Generados con semilla fija: el historial de 90 días (ventas y gastos) es igual en cada carga |
+| Propinas | Se muestran aparte del neto: son del equipo, no del negocio |
+| Retiros | Los retiros de la propietaria no cuentan como gasto del bar |
 | Gráficos | SVG propio, sin librerías de charts; paleta validada para daltonismo |
 
 ## Tecnologías

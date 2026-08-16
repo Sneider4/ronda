@@ -5,10 +5,12 @@ import Link from "next/link";
 import {
   AlertTriangle,
   ArrowUpRight,
+  BookOpen,
   Boxes,
   Clock3,
   CreditCard,
   DollarSign,
+  HandCoins,
   Package,
   ReceiptText,
   Table2,
@@ -21,13 +23,16 @@ import { useDemo } from "@/store/demo-store";
 import {
   bestHour,
   byHour,
+  expensesOfDay,
   lastDays,
   lowStock,
+  monthBalance,
   openAmount,
   openTables,
   paymentBreakdown,
   salesOfDay,
   salesOfMonth,
+  sumAmount,
   tableTotal,
   topProducts,
   totals,
@@ -54,7 +59,7 @@ import { SplitBar } from "@/components/charts/SplitBar";
 import { ReceiptModal } from "@/components/ventas/ReceiptModal";
 
 export default function DashboardPage() {
-  const { sales, tables, products } = useDemo();
+  const { sales, tables, products, expenses } = useDemo();
   const [receipt, setReceipt] = useState<Sale | null>(null);
 
   const today = useMemo(() => new Date(), []);
@@ -85,7 +90,14 @@ export default function DashboardPage() {
     .sort((a, b) => +new Date(b.dateISO) - +new Date(a.dateISO))
     .slice(0, 6);
 
-  const daysWithSales = lastDays(sales, 30).filter((d) => d.total > 0).length || 1;
+  const balance = useMemo(
+    () => monthBalance(sales, expenses, today),
+    [sales, expenses, today],
+  );
+  const gastosHoy = useMemo(
+    () => sumAmount(expensesOfDay(expenses).filter((e) => e.status === "Pagado")),
+    [expenses],
+  );
 
   return (
     <div className="space-y-5">
@@ -104,7 +116,7 @@ export default function DashboardPage() {
           value={money(monthTotals.total)}
           icon={<TrendingUp size={19} />}
           accent="emerald"
-          hint={`Promedio ${money(Math.round(monthTotals.total / daysWithSales))} por día`}
+          hint={`Le quedan ${money(balance.neto)} después de gastos`}
         />
         <StatCard
           label="Mesas ocupadas"
@@ -411,12 +423,26 @@ export default function DashboardPage() {
       </section>
 
       {/* Accesos rápidos */}
-      <section className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <section className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
         <QuickLink
           href="/mesas"
           icon={<Table2 size={18} />}
           title="Abrir una mesa"
           description="Tomar un pedido"
+        />
+        <QuickLink
+          href="/gastos"
+          icon={<HandCoins size={18} />}
+          title="Registrar un gasto"
+          description={
+            gastosHoy ? `Hoy: ${money(gastosHoy)}` : "Compras, servicios…"
+          }
+        />
+        <QuickLink
+          href="/balance"
+          icon={<BookOpen size={18} />}
+          title="Balance del mes"
+          description={`Quedan ${money(balance.neto)}`}
         />
         <QuickLink
           href="/inventario"

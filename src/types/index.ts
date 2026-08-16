@@ -102,6 +102,46 @@ export interface Employee {
   color: string;
 }
 
+/* ── Salidas de dinero (el otro lado del cuaderno) ─────────────────────────*/
+
+export type ExpenseCategoryId =
+  | "proveedores"
+  | "nomina"
+  | "arriendo"
+  | "servicios"
+  | "mantenimiento"
+  | "eventos"
+  | "retiros"
+  | "otros";
+
+export interface ExpenseCategory {
+  id: ExpenseCategoryId;
+  name: string;
+  emoji: string;
+  chip: string;
+  /** Los retiros de la propietaria no son un gasto del negocio: se muestran aparte */
+  isOwnerDraw?: boolean;
+}
+
+export type ExpenseStatus = "Pagado" | "Pendiente";
+
+export interface Expense {
+  id: string;
+  number: number;
+  /** ISO — fecha del gasto (o de la factura) */
+  dateISO: string;
+  category: ExpenseCategoryId;
+  description: string;
+  supplier?: string;
+  amount: number;
+  paymentMethod: PaymentMethod;
+  status: ExpenseStatus;
+  /** ISO — fecha límite de pago de una factura pendiente */
+  dueDateISO?: string;
+  employeeId: string;
+  note?: string;
+}
+
 export interface CashSession {
   openedAt: string;
   openingAmount: number;

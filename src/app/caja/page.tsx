@@ -16,10 +16,13 @@ import type { PaymentMethod } from "@/types";
 import { useDemo } from "@/store/demo-store";
 import { money, number as fmtNumber, timeOfDay, weekdayDate } from "@/lib/format";
 import {
+  cashOut,
+  expensesOfDay,
   openAmount,
   openTables,
   paymentBreakdown,
   salesOfDay,
+  sumAmount,
   totals,
 } from "@/services/analytics";
 import { Card, CardHeader } from "@/components/ui/Card";
@@ -38,7 +41,7 @@ const METHOD_ICONS: Record<PaymentMethod, typeof Banknote> = {
 };
 
 export default function CajaPage() {
-  const { sales, tables, cash, closeCash, reopenCash, toast } = useDemo();
+  const { sales, tables, expenses, cash, closeCash, reopenCash, toast } = useDemo();
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [counted, setCounted] = useState("");
   const [done, setDone] = useState(false);
@@ -50,7 +53,12 @@ export default function CajaPage() {
   const devoluciones = anuladas.reduce((s, x) => s + x.total, 0);
 
   const efectivo = payments.find((p) => p.method === "Efectivo")?.total ?? 0;
-  const esperadoEnCaja = cash.openingAmount + efectivo;
+  const gastosEfectivo = useMemo(() => cashOut(expenses), [expenses]);
+  const gastosDelDia = useMemo(
+    () => expensesOfDay(expenses).filter((e) => e.status === "Pagado"),
+    [expenses],
+  );
+  const esperadoEnCaja = cash.openingAmount + efectivo - gastosEfectivo;
   const countedValue = Number(counted.replace(/\D/g, ""));
   const diferencia = counted ? countedValue - esperadoEnCaja : 0;
 
@@ -183,6 +191,14 @@ export default function CajaPage() {
                 label="Devoluciones / anuladas"
                 value={anuladas.length ? `${anuladas.length} · ${money(devoluciones)}` : "Ninguna"}
               />
+              <Row
+                label="Gastos pagados hoy"
+                value={
+                  gastosDelDia.length
+                    ? `${gastosDelDia.length} · ${money(sumAmount(gastosDelDia))}`
+                    : "Ninguno"
+                }
+              />
             </div>
 
             <div className="rounded-xl bg-slate-50 p-4 ring-1 ring-slate-100 ring-inset">
@@ -197,6 +213,10 @@ export default function CajaPage() {
                 <li className="flex justify-between">
                   <span>+ Ventas en efectivo</span>
                   <span>{money(efectivo)}</span>
+                </li>
+                <li className="flex justify-between text-rose-700">
+                  <span>− Gastos pagados en efectivo</span>
+                  <span>{money(gastosEfectivo)}</span>
                 </li>
               </ul>
               <div className="mt-3 flex items-baseline justify-between border-t border-slate-200 pt-3">

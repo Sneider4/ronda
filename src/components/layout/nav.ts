@@ -1,6 +1,8 @@
 import {
   BarChart3,
+  BookOpen,
   Boxes,
+  HandCoins,
   LayoutDashboard,
   Receipt,
   Table2,
@@ -15,7 +17,7 @@ export interface NavItem {
   icon: typeof LayoutDashboard;
   description: string;
   /** clave del contador que se muestra a la derecha */
-  badge?: "mesas" | "alertas";
+  badge?: "mesas" | "alertas" | "pendientes";
 }
 
 export interface NavGroup {
@@ -52,11 +54,24 @@ export const navGroups: NavGroup[] = [
         icon: Wallet,
         description: "Cierre y arqueo del turno",
       },
+      {
+        href: "/gastos",
+        label: "Gastos",
+        icon: HandCoins,
+        description: "Salidas de dinero y cuentas por pagar",
+        badge: "pendientes",
+      },
     ],
   },
   {
     title: "Administración",
     items: [
+      {
+        href: "/balance",
+        label: "Balance del mes",
+        icon: BookOpen,
+        description: "Cuánto entró, cuánto salió y cuánto quedó",
+      },
       {
         href: "/inventario",
         label: "Inventario",

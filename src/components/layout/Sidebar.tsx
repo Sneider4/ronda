@@ -6,7 +6,12 @@ import { X } from "lucide-react";
 import { Logo } from "@/components/ui/Logo";
 import { navGroups } from "./nav";
 import { useDemo } from "@/store/demo-store";
-import { lowStock, openTables, openAmount } from "@/services/analytics";
+import {
+  lowStock,
+  openAmount,
+  openTables,
+  pendingBills,
+} from "@/services/analytics";
 import { money } from "@/lib/format";
 
 export function Sidebar({
@@ -17,10 +22,11 @@ export function Sidebar({
   onClose: () => void;
 }) {
   const pathname = usePathname();
-  const { tables, products } = useDemo();
+  const { tables, products, expenses } = useDemo();
   const counters = {
     mesas: openTables(tables).length,
     alertas: lowStock(products).length,
+    pendientes: pendingBills(expenses).length,
   };
 
   const content = (
@@ -82,7 +88,9 @@ export function Sidebar({
                             "tabular rounded-full px-2 py-0.5 text-[11px] font-semibold",
                             item.badge === "alertas"
                               ? "bg-rose-500/15 text-rose-300"
-                              : "bg-brand-400/15 text-brand-300",
+                              : item.badge === "pendientes"
+                                ? "bg-sky-400/15 text-sky-300"
+                                : "bg-brand-400/15 text-brand-300",
                           ].join(" ")}
                         >
                           {count}

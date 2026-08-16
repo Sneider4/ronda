@@ -12,6 +12,7 @@ import {
 import type {
   BarTable,
   CashSession,
+  Expense,
   PaymentMethod,
   Product,
   Sale,
@@ -20,6 +21,7 @@ import type {
 } from "@/types";
 import {
   createCashSession,
+  createExpenses,
   createProducts,
   createSales,
   createTables,
@@ -44,8 +46,13 @@ interface DemoState {
   products: Product[];
   tables: BarTable[];
   sales: Sale[];
+  expenses: Expense[];
   cash: CashSession;
   toasts: Toast[];
+  saveExpense: (expense: Expense) => void;
+  deleteExpense: (expenseId: string) => void;
+  payExpense: (expenseId: string) => void;
+  nextExpenseNumber: () => number;
   addToTable: (tableId: string, productId: string, qty?: number) => void;
   setItemQty: (tableId: string, itemId: string, qty: number) => void;
   removeItem: (tableId: string, itemId: string) => void;
@@ -75,6 +82,7 @@ export function DemoProvider({ children }: { children: ReactNode }) {
   const [products, setProducts] = useState<Product[]>(() => createProducts());
   const [tables, setTables] = useState<BarTable[]>(() => createTables());
   const [sales, setSales] = useState<Sale[]>(() => createSales());
+  const [expenses, setExpenses] = useState<Expense[]>(() => createExpenses());
   const [cash, setCash] = useState<CashSession>(() => createCashSession());
   const [toasts, setToasts] = useState<Toast[]>([]);
 
@@ -273,6 +281,35 @@ export function DemoProvider({ children }: { children: ReactNode }) {
     );
   }, []);
 
+  const saveExpense = useCallback((expense: Expense) => {
+    setExpenses((prev) => {
+      const exists = prev.some((e) => e.id === expense.id);
+      const next = exists
+        ? prev.map((e) => (e.id === expense.id ? expense : e))
+        : [...prev, expense];
+      return next.sort((a, b) => +new Date(a.dateISO) - +new Date(b.dateISO));
+    });
+  }, []);
+
+  const deleteExpense = useCallback((expenseId: string) => {
+    setExpenses((prev) => prev.filter((e) => e.id !== expenseId));
+  }, []);
+
+  const payExpense = useCallback((expenseId: string) => {
+    setExpenses((prev) =>
+      prev.map((e) =>
+        e.id === expenseId
+          ? { ...e, status: "Pagado", dueDateISO: undefined }
+          : e,
+      ),
+    );
+  }, []);
+
+  const nextExpenseNumber = useCallback(
+    () => expenses.reduce((m, e) => Math.max(m, e.number), 600) + 1,
+    [expenses],
+  );
+
   const closeCash = useCallback((countedAmount: number) => {
     setCash((prev) => ({
       ...prev,
@@ -290,6 +327,7 @@ export function DemoProvider({ children }: { children: ReactNode }) {
     setProducts(createProducts());
     setTables(createTables());
     setSales(createSales());
+    setExpenses(createExpenses());
     setCash(createCashSession());
   }, []);
 
@@ -298,8 +336,13 @@ export function DemoProvider({ children }: { children: ReactNode }) {
       products,
       tables,
       sales,
+      expenses,
       cash,
       toasts,
+      saveExpense,
+      deleteExpense,
+      payExpense,
+      nextExpenseNumber,
       addToTable,
       setItemQty,
       removeItem,
@@ -318,10 +361,11 @@ export function DemoProvider({ children }: { children: ReactNode }) {
       dismissToast,
     }),
     [
-      products, tables, sales, cash, toasts,
+      products, tables, sales, expenses, cash, toasts,
       addToTable, setItemQty, removeItem, setTableStatus, assignWaiter,
       reserveTable, releaseTable, closeAccount, saveProduct, deleteProduct,
-      restock, closeCash, reopenCash, resetDemo, toast, dismissToast,
+      restock, saveExpense, deleteExpense, payExpense, nextExpenseNumber,
+      closeCash, reopenCash, resetDemo, toast, dismissToast,
     ],
   );
 
