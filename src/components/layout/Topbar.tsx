@@ -7,25 +7,29 @@ import {
   Bell,
   ChevronDown,
   Menu,
+  Repeat2,
   RotateCcw,
   Search,
   ShieldCheck,
   Wallet,
 } from "lucide-react";
 import { findNavItem } from "./nav";
-import { useDemo } from "@/store/demo-store";
+import { useCurrentUser, useDemo } from "@/store/demo-store";
+import { employees } from "@/data/employees";
 import { lowStock, salesOfDay, stockState, totals } from "@/services/analytics";
 import { stockDisplay, stockMessage } from "@/lib/stock";
-import { money, weekdayDate } from "@/lib/format";
+import { initials, money, weekdayDate } from "@/lib/format";
 import { Badge } from "@/components/ui/Badge";
 
 export function Topbar({ onOpenMenu }: { onOpenMenu: () => void }) {
   const pathname = usePathname();
   const item = findNavItem(pathname);
-  const { products, sales, cash, resetDemo, toast } = useDemo();
+  const { products, sales, cash, resetDemo, toast, setCurrentUserId } = useDemo();
+  const { employee, role, can } = useCurrentUser();
 
   const alerts = lowStock(products);
   const today = totals(salesOfDay(sales));
+  const esAdmin = role === "Administrador";
 
   const [openMenu, setOpenMenu] = useState<"alerts" | "user" | null>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -67,21 +71,40 @@ export function Topbar({ onOpenMenu }: { onOpenMenu: () => void }) {
             />
           </div>
 
-          <div className="hidden items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-1.5 md:flex">
-            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600">
-              <Wallet size={15} />
-            </span>
-            <div className="leading-tight">
-              <p className="text-[10px] font-medium tracking-wide text-slate-400 uppercase">
-                Venta de hoy
-              </p>
-              <p className="tabular text-[13px] font-semibold text-slate-900">
-                {money(today.total)}
-              </p>
+          {/* La venta del día es información del negocio: no la ve un mesero */}
+          {can("dashboard") && (
+            <div className="hidden items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-1.5 md:flex">
+              <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600">
+                <Wallet size={15} />
+              </span>
+              <div className="leading-tight">
+                <p className="text-[10px] font-medium tracking-wide text-slate-400 uppercase">
+                  Venta de hoy
+                </p>
+                <p className="tabular text-[13px] font-semibold text-slate-900">
+                  {money(today.total)}
+                </p>
+              </div>
             </div>
-          </div>
+          )}
 
-          {/* Alertas de inventario */}
+          {!esAdmin && (
+            <button
+              onClick={() => {
+                setCurrentUserId("e-1");
+                toast({
+                  title: "De vuelta como administradora",
+                  variant: "info",
+                });
+              }}
+              className="hidden items-center gap-1.5 rounded-xl bg-slate-900 px-3 py-1.5 text-[12px] font-semibold text-white transition-colors hover:bg-slate-700 sm:flex"
+            >
+              Viendo como {role.toLowerCase()} · salir
+            </button>
+          )}
+
+          {/* Alertas de inventario — solo para quien maneja el inventario */}
+          {can("inventario") && (
           <div className="relative">
             <button
               onClick={() => setOpenMenu(openMenu === "alerts" ? null : "alerts")}
@@ -137,6 +160,7 @@ export function Topbar({ onOpenMenu }: { onOpenMenu: () => void }) {
               </div>
             )}
           </div>
+          )}
 
           {/* Usuario */}
           <div className="relative">
@@ -144,16 +168,18 @@ export function Topbar({ onOpenMenu }: { onOpenMenu: () => void }) {
               onClick={() => setOpenMenu(openMenu === "user" ? null : "user")}
               className="flex items-center gap-2 rounded-xl py-1.5 pr-2 pl-1.5 transition-colors hover:bg-slate-100"
             >
-              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-ink-700 to-ink-900 text-[12px] font-bold text-white">
-                CR
+              <span
+                className={`flex h-9 w-9 items-center justify-center rounded-xl text-[12px] font-bold text-white ${
+                  esAdmin ? "bg-gradient-to-br from-ink-700 to-ink-900" : employee.color
+                }`}
+              >
+                {initials(employee.name)}
               </span>
               <span className="hidden text-left leading-tight sm:block">
                 <span className="block text-[13px] font-semibold text-slate-900">
-                  Carlos Restrepo
+                  {employee.name}
                 </span>
-                <span className="block text-[11.5px] text-slate-500">
-                  Administrador
-                </span>
+                <span className="block text-[11.5px] text-slate-500">{role}</span>
               </span>
               <ChevronDown size={15} className="hidden text-slate-400 sm:block" />
             </button>
@@ -162,18 +188,71 @@ export function Topbar({ onOpenMenu }: { onOpenMenu: () => void }) {
               <div className="absolute right-0 mt-2 w-72 origin-top-right animate-[scale-in_0.16s_ease-out] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl shadow-ink-950/10">
                 <div className="border-b border-slate-100 px-4 py-3">
                   <p className="text-sm font-semibold text-slate-900">
-                    Carlos Restrepo
+                    {employee.name}
                   </p>
                   <p className="text-[12.5px] text-slate-500">
-                    Administrador · Bar La Ronda
+                    {role} · Bar La Ronda
                   </p>
                 </div>
+
+                {/* Cambiar de usuario: sirve para mostrar qué ve cada rol */}
+                <div className="border-b border-slate-100 px-4 py-3">
+                  <p className="mb-2 flex items-center gap-1.5 text-[11px] font-semibold tracking-wide text-slate-400 uppercase">
+                    <Repeat2 size={13} /> Ver el sistema como
+                  </p>
+                  <ul className="space-y-1">
+                    {employees
+                      .filter((e) => e.active)
+                      .map((e) => (
+                        <li key={e.id}>
+                          <button
+                            onClick={() => {
+                              setCurrentUserId(e.id);
+                              setOpenMenu(null);
+                              toast({
+                                title: `Ahora ve el sistema como ${e.name}`,
+                                description: `Rol: ${e.role.toLowerCase()}`,
+                                variant: "info",
+                              });
+                            }}
+                            className={[
+                              "flex w-full items-center gap-2.5 rounded-lg px-2 py-1.5 text-left transition-colors",
+                              e.id === employee.id
+                                ? "bg-slate-100"
+                                : "hover:bg-slate-50",
+                            ].join(" ")}
+                          >
+                            <span
+                              className={`flex h-7 w-7 items-center justify-center rounded-lg text-[10px] font-bold text-white ${e.color}`}
+                            >
+                              {initials(e.name)}
+                            </span>
+                            <span className="min-w-0 flex-1">
+                              <span className="block truncate text-[12.5px] font-medium text-slate-800">
+                                {e.name}
+                              </span>
+                              <span className="block text-[11px] text-slate-500">
+                                {e.role}
+                              </span>
+                            </span>
+                            {e.id === employee.id && (
+                              <span className="text-[11px] font-semibold text-brand-700">
+                                Activo
+                              </span>
+                            )}
+                          </button>
+                        </li>
+                      ))}
+                  </ul>
+                </div>
+
                 <div className="px-4 py-3">
                   <div className="flex items-start gap-2.5 rounded-xl bg-brand-50 p-3 ring-1 ring-brand-100 ring-inset">
                     <ShieldCheck size={16} className="mt-0.5 text-brand-700" />
                     <p className="text-[12.5px] leading-relaxed text-brand-900">
-                      Versión de demostración con datos de ejemplo. Ninguna
-                      operación afecta dinero real.
+                      Cada empleado entra con su usuario y solo ve lo que le
+                      corresponde. Los meseros no ven existencias, ventas ni
+                      reportes.
                     </p>
                   </div>
                 </div>

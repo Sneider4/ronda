@@ -16,7 +16,7 @@ import { employeeById, waiters } from "@/data/employees";
 import { money, timeOfDay } from "@/lib/format";
 import { tableStatusConfig } from "@/lib/table-status";
 import { tableTotal } from "@/services/analytics";
-import { useDemo } from "@/store/demo-store";
+import { useCurrentUser, useDemo } from "@/store/demo-store";
 import { Modal } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
@@ -37,6 +37,8 @@ export function TableAccountModal({
 }) {
   const { setItemQty, removeItem, assignWaiter, releaseTable, setTableStatus, toast } =
     useDemo();
+  const { can } = useCurrentUser();
+  const puedeCobrar = can("cobrar");
 
   if (!table) return null;
 
@@ -110,15 +112,22 @@ export function TableAccountModal({
             >
               Agregar producto
             </Button>
-            <Button
-              variant="primary"
-              size="lg"
-              icon={<Wallet size={17} />}
-              disabled={!hasAccount}
-              onClick={onCharge}
-            >
-              Cerrar cuenta · {money(total)}
-            </Button>
+            {/* Cobrar es de la caja y la administradora; el mesero solo avisa */}
+            {puedeCobrar ? (
+              <Button
+                variant="primary"
+                size="lg"
+                icon={<Wallet size={17} />}
+                disabled={!hasAccount}
+                onClick={onCharge}
+              >
+                Cerrar cuenta · {money(total)}
+              </Button>
+            ) : (
+              <span className="flex items-center justify-center rounded-xl bg-slate-100 px-4 text-[13px] font-medium text-slate-500">
+                El cobro lo hace la caja
+              </span>
+            )}
           </div>
         </div>
       }

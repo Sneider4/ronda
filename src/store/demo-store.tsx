@@ -27,6 +27,8 @@ import {
   createSales,
   createTables,
 } from "@/data/seed";
+import { employeeById } from "@/data/employees";
+import { can, type Permission } from "@/lib/permissions";
 
 /* ────────────────────────────────────────────────────────────────────────────
  * Estado de la demostración.
@@ -44,6 +46,9 @@ interface CloseAccountInput {
 }
 
 interface DemoState {
+  /** Empleado que está usando el sistema: define qué puede ver y hacer */
+  currentUserId: string;
+  setCurrentUserId: (id: string) => void;
   products: Product[];
   tables: BarTable[];
   sales: Sale[];
@@ -92,6 +97,8 @@ const todayKey = () => {
 
 interface Snapshot {
   day: string;
+  /** El empleado activo también sobrevive a la recarga, como una sesión real */
+  currentUserId?: string;
   products: Product[];
   tables: BarTable[];
   expenses: Expense[];
@@ -110,6 +117,9 @@ export function DemoProvider({ children }: { children: ReactNode }) {
   const [expenses, setExpenses] = useState<Expense[]>(() => createExpenses());
   const [cash, setCash] = useState<CashSession>(() => createCashSession());
   const [toasts, setToasts] = useState<Toast[]>([]);
+  // Arranca como la administradora; se puede cambiar para mostrar cómo ve el
+  // sistema un mesero o la persona de caja.
+  const [currentUserId, setCurrentUserId] = useState("e-1");
 
   /** Número de la última venta sembrada: lo posterior se guarda entre recargas */
   const baseSaleNumber = useRef(
@@ -123,6 +133,7 @@ export function DemoProvider({ children }: { children: ReactNode }) {
       if (raw) {
         const saved = JSON.parse(raw) as Snapshot;
         if (saved.day === todayKey()) {
+          if (saved.currentUserId) setCurrentUserId(saved.currentUserId);
           setProducts(saved.products);
           setTables(saved.tables);
           setExpenses(saved.expenses);
@@ -149,6 +160,7 @@ export function DemoProvider({ children }: { children: ReactNode }) {
     try {
       const snapshot: Snapshot = {
         day: todayKey(),
+        currentUserId,
         products,
         tables,
         expenses,
@@ -159,7 +171,7 @@ export function DemoProvider({ children }: { children: ReactNode }) {
     } catch {
       // Sin espacio en el navegador: la demo sigue funcionando en memoria
     }
-  }, [ready, products, tables, expenses, cash, sales]);
+  }, [ready, currentUserId, products, tables, expenses, cash, sales]);
 
   const toast = useCallback((t: Omit<Toast, "id">) => {
     const id = uid();
@@ -413,10 +425,13 @@ export function DemoProvider({ children }: { children: ReactNode }) {
     setSales(freshSales);
     setExpenses(createExpenses());
     setCash(createCashSession());
+    setCurrentUserId("e-1");
   }, []);
 
   const value = useMemo<DemoState>(
     () => ({
+      currentUserId,
+      setCurrentUserId,
       products,
       tables,
       sales,
@@ -445,7 +460,7 @@ export function DemoProvider({ children }: { children: ReactNode }) {
       dismissToast,
     }),
     [
-      products, tables, sales, expenses, cash, toasts,
+      currentUserId, products, tables, sales, expenses, cash, toasts,
       addToTable, setItemQty, removeItem, setTableStatus, assignWaiter,
       reserveTable, releaseTable, closeAccount, saveProduct, deleteProduct,
       restock, saveExpense, deleteExpense, payExpense, nextExpenseNumber,
@@ -464,6 +479,17 @@ export function useDemo() {
   const ctx = useContext(DemoContext);
   if (!ctx) throw new Error("useDemo debe usarse dentro de <DemoProvider>");
   return ctx;
+}
+
+/** Empleado activo y lo que su rol le permite ver. */
+export function useCurrentUser() {
+  const { currentUserId } = useDemo();
+  const employee = employeeById(currentUserId);
+  return {
+    employee,
+    role: employee.role,
+    can: (permission: Permission) => can(employee.role, permission),
+  };
 }
 
 function BootSplash() {

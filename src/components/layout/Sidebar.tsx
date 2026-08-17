@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { X } from "lucide-react";
 import { Logo } from "@/components/ui/Logo";
 import { navGroups } from "./nav";
-import { useDemo } from "@/store/demo-store";
+import { useCurrentUser, useDemo } from "@/store/demo-store";
 import {
   lowStock,
   openAmount,
@@ -23,6 +23,13 @@ export function Sidebar({
 }) {
   const pathname = usePathname();
   const { tables, products, expenses } = useDemo();
+  const { can } = useCurrentUser();
+
+  // Cada rol solo ve las secciones que le corresponden
+  const visibleGroups = navGroups
+    .map((g) => ({ ...g, items: g.items.filter((i) => can(i.permission)) }))
+    .filter((g) => g.items.length > 0);
+
   const counters = {
     mesas: openTables(tables).length,
     alertas: lowStock(products).length,
@@ -45,7 +52,7 @@ export function Sidebar({
       </div>
 
       <nav className="flex-1 space-y-6 overflow-y-auto px-3 pb-4">
-        {navGroups.map((group) => (
+        {visibleGroups.map((group) => (
           <div key={group.title}>
             <p className="px-3 pb-2 text-[10px] font-semibold tracking-[0.16em] text-white/30 uppercase">
               {group.title}

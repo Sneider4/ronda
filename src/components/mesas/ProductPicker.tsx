@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { Check, Plus, Search, ShoppingBag } from "lucide-react";
 import type { CategoryId } from "@/types";
 import { categories } from "@/data/catalog";
-import { useDemo } from "@/store/demo-store";
+import { useCurrentUser, useDemo } from "@/store/demo-store";
 import { money } from "@/lib/format";
 import { stockState, tableTotal } from "@/services/analytics";
 import { Modal } from "@/components/ui/Modal";
@@ -24,6 +24,10 @@ export function ProductPicker({
   tableId: string | null;
 }) {
   const { products, tables, addToTable } = useDemo();
+  // Las existencias son información del negocio: un mesero no las ve.
+  // Para él todos los productos se ven igual y siempre puede venderlos.
+  const { can } = useCurrentUser();
+  const verStock = can("inventario");
   const [filter, setFilter] = useState<Filter>("todos");
   const [query, setQuery] = useState("");
   const [flash, setFlash] = useState<Record<string, number>>({});
@@ -114,7 +118,7 @@ export function ProductPicker({
           const state = stockState(p);
           // Aunque no haya existencias se puede vender: el inventario queda en
           // negativo y cuadra cuando se registre la entrada del surtido.
-          const sinInventario = p.stock <= 0;
+          const sinInventario = verStock && p.stock <= 0;
           const added = flash[p.id];
           return (
             <button
@@ -136,11 +140,13 @@ export function ProductPicker({
                 <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-slate-50 text-xl ring-1 ring-slate-100 ring-inset">
                   {p.emoji}
                 </span>
-                {state === "bajo" && (
+                {verStock && state === "bajo" && (
                   <Badge tone="warning">Quedan {p.stock}</Badge>
                 )}
-                {state === "agotado" && <Badge tone="danger">Sin inventario</Badge>}
-                {state === "negativo" && (
+                {verStock && state === "agotado" && (
+                  <Badge tone="danger">Sin inventario</Badge>
+                )}
+                {verStock && state === "negativo" && (
                   <Badge tone="danger">Faltan {Math.abs(p.stock)}</Badge>
                 )}
               </div>

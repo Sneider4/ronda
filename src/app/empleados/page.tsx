@@ -6,6 +6,7 @@ import { employees } from "@/data/employees";
 import { useDemo } from "@/store/demo-store";
 import { initials, money, number as fmtNumber } from "@/lib/format";
 import { salesOfDay, totals } from "@/services/analytics";
+import { can, PERMISSION_LABELS } from "@/lib/permissions";
 import { Card, CardHeader } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 
@@ -15,37 +16,6 @@ const ROLE_TONE: Record<EmployeeRole, "brand" | "info" | "success" | "violet"> =
   Mesera: "violet",
   Caja: "success",
 };
-
-/** Lo que podría hacer cada rol cuando el sistema tenga control de accesos. */
-const PERMISSIONS: {
-  label: string;
-  roles: Record<EmployeeRole | "todos", boolean>;
-}[] = [
-  {
-    label: "Tomar pedidos y abrir mesas",
-    roles: { Administrador: true, Mesero: true, Mesera: true, Caja: true, todos: true },
-  },
-  {
-    label: "Cobrar y cerrar cuentas",
-    roles: { Administrador: true, Mesero: false, Mesera: false, Caja: true, todos: false },
-  },
-  {
-    label: "Aplicar descuentos",
-    roles: { Administrador: true, Mesero: false, Mesera: false, Caja: false, todos: false },
-  },
-  {
-    label: "Modificar precios y productos",
-    roles: { Administrador: true, Mesero: false, Mesera: false, Caja: false, todos: false },
-  },
-  {
-    label: "Cerrar la caja del turno",
-    roles: { Administrador: true, Mesero: false, Mesera: false, Caja: true, todos: false },
-  },
-  {
-    label: "Ver reportes del negocio",
-    roles: { Administrador: true, Mesero: false, Mesera: false, Caja: false, todos: false },
-  },
-];
 
 const ROLES: EmployeeRole[] = ["Administrador", "Caja", "Mesero", "Mesera"];
 
@@ -145,14 +115,14 @@ export default function EmpleadosPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
-              {PERMISSIONS.map((p) => (
+              {PERMISSION_LABELS.map((p) => (
                 <tr key={p.label} className="transition-colors hover:bg-slate-50/70">
                   <td className="px-5 py-3 text-[13.5px] text-slate-700">
                     {p.label}
                   </td>
                   {ROLES.map((r) => (
                     <td key={r} className="px-5 py-3 text-center">
-                      {p.roles[r] ? (
+                      {can(r, p.permission) ? (
                         <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-emerald-50 text-emerald-600 ring-1 ring-emerald-100 ring-inset">
                           ✓
                         </span>
@@ -171,11 +141,13 @@ export default function EmpleadosPage() {
 
         <div className="border-t border-slate-100 bg-slate-50/60 px-5 py-4">
           <p className="text-[12.5px] leading-relaxed text-slate-600">
-            En esta demostración todos los módulos están abiertos para poder
-            mostrarlos. En la versión final, cada empleado entra con su usuario y
-            solo ve lo que le corresponde: los meseros toman pedidos, la caja
-            cobra y cierra el turno, y la propietaria es la única que ve los
-            reportes y modifica precios.
+            Estos permisos ya están funcionando en la demostración. Para verlo:
+            arriba a la derecha, en su nombre, elija <strong>“Ver el sistema
+            como”</strong> y entre como Andrés (mesero). Va a notar que solo le
+            aparece <strong>Mesas</strong>: no ve existencias, ni la venta del
+            día, ni los reportes. Puede tomar pedidos con normalidad, incluso de
+            productos que estén agotados, pero la información del negocio no
+            queda a la vista de todo el mundo.
           </p>
         </div>
       </Card>

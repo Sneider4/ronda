@@ -60,6 +60,12 @@ npm start
 12. **Caja** — resumen del turno, cuánto efectivo debe haber (descontando los
     gastos pagados en efectivo) y **Cerrar caja** con arqueo y diferencia.
 
+11. **Empleados → “Ver el sistema como” Andrés (mesero)**: el menú se reduce
+    a *Mesas*, desaparecen la venta del día y las alertas de inventario, y al
+    cobrar aparece “el cobro lo hace la caja”. Es el momento para decir: *“la
+    información del negocio es suya, no del personal”*. Se vuelve con el
+    botón **Viendo como mesero · salir**.
+
 En el menú de usuario (arriba a la derecha) está **Reiniciar datos de la
 demostración** para volver al estado inicial antes de una nueva presentación.
 
@@ -116,6 +122,7 @@ src/
 | Datos | Generados con semilla fija: el historial de 90 días (ventas y gastos) es igual en cada carga |
 | Inventario | **Nunca bloquea una venta**: si no hay existencias, vende igual y el stock queda en negativo ("Por cuadrar"). Al registrar la entrada del surtido, esas unidades se descuentan solas |
 | Estado | Lo que se hace en la demo sobrevive a un F5 (se guarda en el navegador el mismo día). "Reiniciar demostración" lo borra |
+| Permisos | Reales y activos (`src/lib/permissions.ts`). Un mesero solo ve Mesas: no ve existencias, ni la venta del día, ni reportes, y no puede cobrar. Se cambia de usuario desde el menú superior ("Ver el sistema como") |
 | Propinas | Se muestran aparte del neto: son del equipo, no del negocio |
 | Retiros | Los retiros de la propietaria no cuentan como gasto del bar |
 | Gráficos | SVG propio, sin librerías de charts; paleta validada para daltonismo |
