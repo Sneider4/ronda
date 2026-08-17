@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Eye, Receipt, Search } from "lucide-react";
+import { CalendarDays, Eye, Receipt, Search } from "lucide-react";
 import type { PaymentMethod, Sale } from "@/types";
 import { useDemo } from "@/store/demo-store";
 import { employeeById } from "@/data/employees";
@@ -10,11 +10,22 @@ import { totals } from "@/services/analytics";
 import { Card, CardHeader, EmptyState } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
-import { Field, SearchInput, Segmented, Select } from "@/components/ui/Field";
+import { Field, Input, SearchInput, Segmented, Select } from "@/components/ui/Field";
 import { ReceiptModal } from "@/components/ventas/ReceiptModal";
+import { DayDetailModal } from "@/components/balance/DayDetailModal";
 import { paymentIcons } from "@/lib/table-status";
 
-type Range = "hoy" | "7" | "mes" | "todo";
+type Range = "hoy" | "dia" | "7" | "mes" | "todo";
+
+const toInputDate = (d: Date) => {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+};
+
+const fromInputDate = (value: string) => {
+  const [y, m, d] = value.split("-").map(Number);
+  return new Date(y, (m ?? 1) - 1, d ?? 1, 12, 0, 0);
+};
 
 export default function VentasPage() {
   const { sales, tables } = useDemo();
@@ -24,6 +35,8 @@ export default function VentasPage() {
   const [query, setQuery] = useState("");
   const [limit, setLimit] = useState(25);
   const [receipt, setReceipt] = useState<Sale | null>(null);
+  const [day, setDay] = useState(() => toInputDate(new Date()));
+  const [detalle, setDetalle] = useState<Date | null>(null);
 
   const filtered = useMemo(() => {
     const now = new Date();
@@ -38,15 +51,20 @@ export default function VentasPage() {
       .filter((s) => {
         const d = new Date(s.dateISO);
         const byRange =
-          range === "todo" ||
-          (range === "hoy" ? isSameDay(d, now) : d >= from && d <= now);
+          range === "todo"
+            ? true
+            : range === "hoy"
+              ? isSameDay(d, now)
+              : range === "dia"
+                ? isSameDay(d, fromInputDate(day))
+                : d >= from && d <= now;
         const byMethod = method === "todos" || s.paymentMethod === method;
         const byTable = table === "todas" || String(s.tableNumber) === table;
         const byQuery = !q || String(s.number).includes(q);
         return byRange && byMethod && byTable && byQuery;
       })
       .sort((a, b) => +new Date(b.dateISO) - +new Date(a.dateISO));
-  }, [sales, range, method, table, query]);
+  }, [sales, range, method, table, query, day]);
 
   const summary = totals(filtered);
   const anuladas = filtered.filter((s) => s.status === "Anulada").length;
@@ -75,19 +93,40 @@ export default function VentasPage() {
           />
 
           <div className="flex flex-col gap-3 xl:flex-row xl:items-end xl:justify-between">
-            <Segmented<Range>
-              value={range}
-              onChange={(v) => {
-                setRange(v);
-                setLimit(25);
-              }}
-              options={[
-                { value: "hoy", label: "Hoy" },
-                { value: "7", label: "Últimos 7 días" },
-                { value: "mes", label: "Este mes" },
-                { value: "todo", label: "Todo" },
-              ]}
-            />
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+              <Segmented<Range>
+                value={range}
+                onChange={(v) => {
+                  setRange(v);
+                  setLimit(25);
+                }}
+                options={[
+                  { value: "hoy", label: "Hoy" },
+                  { value: "dia", label: "Un día" },
+                  { value: "7", label: "Últimos 7 días" },
+                  { value: "mes", label: "Este mes" },
+                  { value: "todo", label: "Todo" },
+                ]}
+              />
+
+              {range === "dia" && (
+                <div className="flex flex-wrap items-center gap-2">
+                  <Input
+                    type="date"
+                    value={day}
+                    max={toInputDate(new Date())}
+                    onChange={(e) => setDay(e.target.value)}
+                    className="w-44"
+                  />
+                  <Button
+                    icon={<CalendarDays size={15} />}
+                    onClick={() => setDetalle(fromInputDate(day))}
+                  >
+                    Ver resumen del día
+                  </Button>
+                </div>
+              )}
+            </div>
 
             <div className="grid gap-3 sm:grid-cols-3">
               <Field label="Método de pago">
@@ -227,6 +266,7 @@ export default function VentasPage() {
       </Card>
 
       <ReceiptModal sale={receipt} onClose={() => setReceipt(null)} />
+      <DayDetailModal date={detalle} onClose={() => setDetalle(null)} />
     </div>
   );
 }

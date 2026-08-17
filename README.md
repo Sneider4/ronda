@@ -54,7 +54,10 @@ npm start
 9. **Gastos** — todo lo que sale: compras a proveedores, arriendo, nómina,
    servicios, música. Con **cuentas por pagar** pendientes.
 10. **Balance del mes** — el cuaderno: cuánto entró, cuánto salió, cuánto
-    quedó, día por día, comparado con el mes anterior.
+    quedó, día por día, comparado con el mes anterior. **Al tocar un día** se
+    abre su resumen completo (ventas, propinas, gastos, lo más vendido, por
+    hora y cada venta con su comprobante). En *Ventas* también se puede elegir
+    una fecha exacta con **Un día**.
 11. **Reportes** — producto más vendido, hora de mayor movimiento, día con
     mayores ventas, ventas por categoría.
 12. **Caja** — resumen del turno, cuánto efectivo debe haber (descontando los

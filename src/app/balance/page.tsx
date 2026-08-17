@@ -32,6 +32,7 @@ import { Badge } from "@/components/ui/Badge";
 import { BarSeries } from "@/components/charts/BarSeries";
 import { RankList } from "@/components/charts/RankList";
 import { SplitBar } from "@/components/charts/SplitBar";
+import { DayDetailModal } from "@/components/balance/DayDetailModal";
 
 const MONTHS = [
   "enero", "febrero", "marzo", "abril", "mayo", "junio",
@@ -46,6 +47,7 @@ export default function BalancePage() {
     const now = new Date();
     return `${now.getFullYear()}-${now.getMonth()}`;
   });
+  const [detalle, setDetalle] = useState<Date | null>(null);
 
   const [year, month] = monthKey.split("-").map(Number);
   const ref = new Date(year, month, 1);
@@ -316,7 +318,7 @@ export default function BalancePage() {
         <div className="p-5">
           <CardHeader
             title="Día por día"
-            subtitle="El mismo cuaderno de siempre, pero cuadrado solo"
+            subtitle="Toque cualquier día para ver cómo le fue esa noche"
             icon={<BookOpen size={17} />}
             className="mb-0"
           />
@@ -338,10 +340,11 @@ export default function BalancePage() {
               {[...balance.dias].reverse().map((d) => (
                 <tr
                   key={d.date.toISOString()}
-                  className="transition-colors hover:bg-slate-50/70"
+                  onClick={() => setDetalle(d.date)}
+                  className="cursor-pointer transition-colors hover:bg-brand-50/60"
                 >
                   <td className="px-5 py-2.5">
-                    <span className="text-[13.5px] font-medium text-slate-900">
+                    <span className="text-[13.5px] font-medium text-slate-900 underline decoration-slate-200 underline-offset-4">
                       {weekdayShort(d.date)} {d.date.getDate()}
                     </span>
                     <span className="tabular ml-2 text-[12px] text-slate-400">
@@ -412,6 +415,8 @@ export default function BalancePage() {
           </span>
         </div>
       </Card>
+
+      <DayDetailModal date={detalle} onClose={() => setDetalle(null)} />
     </div>
   );
 }
