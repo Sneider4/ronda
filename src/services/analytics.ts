@@ -224,7 +224,8 @@ export function averageByWeekday(sales: Sale[], days = 28) {
 /* ── Inventario ────────────────────────────────────────────────────────────*/
 
 export function stockState(p: Product): StockState {
-  if (p.stock <= 0) return "agotado";
+  if (p.stock < 0) return "negativo";
+  if (p.stock === 0) return "agotado";
   if (p.stock <= p.minStock) return "bajo";
   return "disponible";
 }
@@ -233,6 +234,14 @@ export const lowStock = (products: Product[]) =>
   products
     .filter((p) => stockState(p) !== "disponible")
     .sort((a, b) => a.stock / (a.minStock || 1) - b.stock / (b.minStock || 1));
+
+/** Productos vendidos sin existencias: falta registrar la entrada de mercancía */
+export const pendingEntry = (products: Product[]) =>
+  products.filter((p) => p.stock < 0).sort((a, b) => a.stock - b.stock);
+
+/** Unidades que se vendieron y todavía no se han ingresado */
+export const pendingUnits = (products: Product[]) =>
+  pendingEntry(products).reduce((s, p) => s + Math.abs(p.stock), 0);
 
 export const inventoryValue = (products: Product[]) =>
   products.reduce((s, p) => s + p.stock * p.cost, 0);

@@ -32,11 +32,13 @@ import {
   paymentBreakdown,
   salesOfDay,
   salesOfMonth,
+  stockState,
   sumAmount,
   tableTotal,
   topProducts,
   totals,
 } from "@/services/analytics";
+import { stockDisplay, stockMessage } from "@/lib/stock";
 import {
   dayLabel,
   hourLabel,
@@ -302,13 +304,11 @@ export default function DashboardPage() {
                     {p.name}
                   </p>
                   <p className="text-[12px] text-slate-500">
-                    {p.stock === 0
-                      ? "Sin existencias — no se puede vender"
-                      : `Quedan ${p.stock} · mínimo ${p.minStock}`}
+                    {stockMessage(p, stockState(p))}
                   </p>
                 </div>
-                <Badge tone={p.stock === 0 ? "danger" : "warning"} dot>
-                  {p.stock === 0 ? "Agotado" : "Stock bajo"}
+                <Badge tone={stockDisplay[stockState(p)].tone} dot>
+                  {stockDisplay[stockState(p)].label}
                 </Badge>
               </li>
             ))}

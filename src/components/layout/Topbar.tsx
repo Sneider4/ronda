@@ -14,7 +14,8 @@ import {
 } from "lucide-react";
 import { findNavItem } from "./nav";
 import { useDemo } from "@/store/demo-store";
-import { lowStock, salesOfDay, totals } from "@/services/analytics";
+import { lowStock, salesOfDay, stockState, totals } from "@/services/analytics";
+import { stockDisplay, stockMessage } from "@/lib/stock";
 import { money, weekdayDate } from "@/lib/format";
 import { Badge } from "@/components/ui/Badge";
 
@@ -117,11 +118,11 @@ export function Topbar({ onOpenMenu }: { onOpenMenu: () => void }) {
                           {p.name}
                         </p>
                         <p className="text-[12px] text-slate-500">
-                          Quedan {p.stock} · mínimo {p.minStock}
+                          {stockMessage(p, stockState(p))}
                         </p>
                       </div>
-                      <Badge tone={p.stock === 0 ? "danger" : "warning"} dot>
-                        {p.stock === 0 ? "Agotado" : "Stock bajo"}
+                      <Badge tone={stockDisplay[stockState(p)].tone} dot>
+                        {stockDisplay[stockState(p)].label}
                       </Badge>
                     </li>
                   ))}

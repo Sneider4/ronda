@@ -14,7 +14,15 @@ import type { CategoryId, Product } from "@/types";
 import { categories, categoryById } from "@/data/catalog";
 import { useDemo } from "@/store/demo-store";
 import { money, number as fmtNumber } from "@/lib/format";
-import { inventoryValue, lowStock, potentialRevenue, stockState } from "@/services/analytics";
+import {
+  inventoryValue,
+  lowStock,
+  pendingEntry,
+  pendingUnits,
+  potentialRevenue,
+  stockState,
+} from "@/services/analytics";
+import { stockDisplay, stockMessage } from "@/lib/stock";
 import { StatCard } from "@/components/ui/StatCard";
 import { Card, CardHeader, EmptyState } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
@@ -23,7 +31,7 @@ import { Field, Input, SearchInput, Segmented } from "@/components/ui/Field";
 import { Modal } from "@/components/ui/Modal";
 
 type Filter = "todos" | CategoryId;
-type StateFilter = "todos" | "bajo" | "agotado";
+type StateFilter = "todos" | "bajo" | "agotado" | "negativo";
 
 export default function InventarioPage() {
   const { products, restock, toast } = useDemo();
@@ -35,6 +43,7 @@ export default function InventarioPage() {
 
   const alerts = lowStock(products);
   const outOfStock = products.filter((p) => p.stock === 0);
+  const porIngresar = pendingEntry(products);
 
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -42,10 +51,7 @@ export default function InventarioPage() {
       const byCat = filter === "todos" || p.category === filter;
       const byQuery = !q || p.name.toLowerCase().includes(q);
       const state = stockState(p);
-      const byState =
-        stateFilter === "todos" ||
-        (stateFilter === "bajo" && state === "bajo") ||
-        (stateFilter === "agotado" && state === "agotado");
+      const byState = stateFilter === "todos" || state === stateFilter;
       return byCat && byQuery && byState;
     });
   }, [products, filter, query, stateFilter]);
@@ -85,14 +91,70 @@ export default function InventarioPage() {
           accent="brand"
           hint="Por debajo del mínimo"
         />
-        <StatCard
-          label="Agotados"
-          value={fmtNumber(outOfStock.length)}
-          icon={<XCircle size={19} />}
-          accent="rose"
-          hint="No se pueden vender"
-        />
+        {porIngresar.length > 0 ? (
+          <StatCard
+            label="Vendidos sin ingresar"
+            value={fmtNumber(pendingUnits(products))}
+            icon={<PackagePlus size={19} />}
+            accent="rose"
+            hint={`${porIngresar.length} productos por cuadrar`}
+          />
+        ) : (
+          <StatCard
+            label="Agotados"
+            value={fmtNumber(outOfStock.length)}
+            icon={<XCircle size={19} />}
+            accent="rose"
+            hint="Se pueden vender igual"
+          />
+        )}
       </section>
+
+      {/* Productos vendidos sin existencias: falta ingresar el surtido */}
+      {porIngresar.length > 0 && (
+        <Card className="border-rose-200 bg-rose-50/60">
+          <CardHeader
+            title="Falta ingresar mercancía"
+            subtitle="Se vendieron productos que todavía no están cargados en el inventario"
+            icon={<PackagePlus size={17} />}
+          />
+          <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            {porIngresar.map((p) => (
+              <li
+                key={p.id}
+                className="flex items-center gap-3 rounded-xl bg-white p-3.5 ring-1 ring-rose-200/70"
+              >
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-rose-50 text-lg">
+                  {p.emoji}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-[13.5px] font-semibold text-slate-900">
+                    {p.name}
+                  </p>
+                  <p className="tabular text-[12px] text-rose-700">
+                    Debe ingresar {Math.abs(p.stock)} unidades
+                  </p>
+                </div>
+                <Button
+                  size="sm"
+                  variant="danger"
+                  onClick={() => {
+                    setTarget(p);
+                    setUnits(Math.abs(p.stock) + p.minStock);
+                  }}
+                >
+                  Ingresar
+                </Button>
+              </li>
+            ))}
+          </ul>
+          <p className="mt-4 text-[12.5px] leading-relaxed text-slate-600">
+            El sistema nunca frena una venta por falta de inventario: la
+            registra y deja el producto en negativo. Cuando cargue el surtido,
+            esas unidades se descuentan solas y el producto vuelve a cuadrar.
+          </p>
+        </Card>
+      )}
 
       {/* Alertas — el argumento comercial */}
       {alerts.length > 0 && (
@@ -113,7 +175,7 @@ export default function InventarioPage() {
 
             <ul className="grid flex-1 gap-3 sm:grid-cols-2">
               {alerts.slice(0, 6).map((p) => {
-                const agotado = p.stock === 0;
+                const agotado = p.stock <= 0;
                 return (
                   <li
                     key={p.id}
@@ -127,9 +189,7 @@ export default function InventarioPage() {
                         {p.name}
                       </p>
                       <p className="text-[12px] text-white/50">
-                        {agotado
-                          ? "Sin existencias"
-                          : `Quedan ${p.stock} de ${p.minStock} mínimo`}
+                        {stockMessage(p, stockState(p))}
                       </p>
                     </div>
                     <button
@@ -187,6 +247,7 @@ export default function InventarioPage() {
                   { value: "todos", label: "Todo el stock" },
                   { value: "bajo", label: "Stock bajo" },
                   { value: "agotado", label: "Agotados" },
+                  { value: "negativo", label: "Por cuadrar" },
                 ]}
               />
               <SearchInput
@@ -217,9 +278,10 @@ export default function InventarioPage() {
               {visible.map((p) => {
                 const state = stockState(p);
                 const cat = categoryById(p.category);
+                const display = stockDisplay[state];
                 const ratio = Math.min(
                   100,
-                  (p.stock / Math.max(p.minStock * 2, 1)) * 100,
+                  Math.max(0, (p.stock / Math.max(p.minStock * 2, 1)) * 100),
                 );
                 return (
                   <tr key={p.id} className="transition-colors hover:bg-slate-50/70">
@@ -246,44 +308,34 @@ export default function InventarioPage() {
                       </span>
                     </td>
                     <td className="px-5 py-3">
-                      <div className="w-36">
-                        <p className="tabular text-[13.5px] font-semibold text-slate-900">
+                      <div className="w-40">
+                        <p
+                          className={`tabular text-[13.5px] font-semibold ${
+                            state === "negativo" ? "text-rose-700" : "text-slate-900"
+                          }`}
+                        >
                           {p.stock} unidades
                         </p>
-                        <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-slate-100">
-                          <div
-                            className={[
-                              "h-full rounded-full transition-all duration-500",
-                              state === "agotado"
-                                ? "bg-rose-500"
-                                : state === "bajo"
-                                  ? "bg-amber-500"
-                                  : "bg-emerald-500",
-                            ].join(" ")}
-                            style={{ width: `${Math.max(ratio, 3)}%` }}
-                          />
-                        </div>
+                        {state === "negativo" ? (
+                          <p className="text-[11.5px] text-rose-600">
+                            Faltan {Math.abs(p.stock)} por ingresar
+                          </p>
+                        ) : (
+                          <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-slate-100">
+                            <div
+                              className={`h-full rounded-full transition-all duration-500 ${display.bar}`}
+                              style={{ width: `${Math.max(ratio, 3)}%` }}
+                            />
+                          </div>
+                        )}
                       </div>
                     </td>
                     <td className="tabular px-5 py-3 text-center text-[13.5px] text-slate-600">
                       {p.minStock}
                     </td>
                     <td className="px-5 py-3">
-                      <Badge
-                        tone={
-                          state === "agotado"
-                            ? "danger"
-                            : state === "bajo"
-                              ? "warning"
-                              : "success"
-                        }
-                        dot
-                      >
-                        {state === "agotado"
-                          ? "Agotado"
-                          : state === "bajo"
-                            ? "Stock bajo"
-                            : "Disponible"}
+                      <Badge tone={display.tone} dot>
+                        {display.label}
                       </Badge>
                     </td>
                     <td className="tabular px-5 py-3 text-right text-[13.5px] font-semibold text-slate-900">
@@ -350,6 +402,11 @@ export default function InventarioPage() {
                 <p className="text-[12.5px] text-slate-500">
                   Existencias actuales: {target.stock} · mínimo {target.minStock}
                 </p>
+                {target.stock < 0 && (
+                  <p className="text-[12.5px] font-medium text-rose-600">
+                    {Math.abs(target.stock)} ya se vendieron sin ingresar
+                  </p>
+                )}
               </div>
             </div>
 
@@ -386,6 +443,8 @@ export default function InventarioPage() {
 
             <p className="tabular rounded-lg bg-emerald-50 px-3 py-2 text-[13px] font-medium text-emerald-800">
               Quedará con {target.stock + units} unidades
+              {target.stock < 0 &&
+                ` (ya descontadas las ${Math.abs(target.stock)} que se vendieron)`}
             </p>
           </div>
         )}

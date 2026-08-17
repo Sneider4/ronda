@@ -7,6 +7,7 @@ import { categories, categoryById } from "@/data/catalog";
 import { useDemo } from "@/store/demo-store";
 import { money, percent } from "@/lib/format";
 import { stockState } from "@/services/analytics";
+import { stockDisplay } from "@/lib/stock";
 import { Card, CardHeader, EmptyState } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Button, IconButton } from "@/components/ui/Button";
@@ -187,25 +188,16 @@ export default function ProductosPage() {
                         {percent(marginPct)}
                       </p>
                     </td>
-                    <td className="tabular px-5 py-3 text-center text-[13.5px] text-slate-700">
+                    <td
+                      className={`tabular px-5 py-3 text-center text-[13.5px] ${
+                        p.stock < 0 ? "font-semibold text-rose-700" : "text-slate-700"
+                      }`}
+                    >
                       {p.stock}
                     </td>
                     <td className="px-5 py-3">
-                      <Badge
-                        tone={
-                          state === "agotado"
-                            ? "danger"
-                            : state === "bajo"
-                              ? "warning"
-                              : "success"
-                        }
-                        dot
-                      >
-                        {state === "agotado"
-                          ? "Agotado"
-                          : state === "bajo"
-                            ? "Stock bajo"
-                            : "Disponible"}
+                      <Badge tone={stockDisplay[state].tone} dot>
+                        {stockDisplay[state].label}
                       </Badge>
                     </td>
                     <td className="px-5 py-3">

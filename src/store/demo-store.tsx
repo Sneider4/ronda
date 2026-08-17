@@ -6,6 +6,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -75,6 +76,30 @@ const DemoContext = createContext<DemoState | null>(null);
 
 const uid = () => Math.random().toString(36).slice(2, 10);
 
+/* ── Persistencia local ────────────────────────────────────────────────────
+ * Lo que se hace durante la demostración sobrevive a un F5: mesas, cuentas,
+ * inventario, gastos y caja. Como los datos de ejemplo se generan sobre "hoy",
+ * al cambiar de día se descarta lo guardado y se vuelve a sembrar todo.
+ * Solo se guarda lo que cambió: el historial de 90 días se regenera solo.
+ * ────────────────────────────────────────────────────────────────────────── */
+
+const STORAGE_KEY = "ronda-demo-v1";
+
+const todayKey = () => {
+  const d = new Date();
+  return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
+};
+
+interface Snapshot {
+  day: string;
+  products: Product[];
+  tables: BarTable[];
+  expenses: Expense[];
+  cash: CashSession;
+  /** Ventas hechas durante la demostración (el historial base se regenera) */
+  newSales: Sale[];
+}
+
 export function DemoProvider({ children }: { children: ReactNode }) {
   // Los datos se generan en el cliente para que las horas mostradas coincidan
   // siempre con la zona horaria del equipo donde se hace la demostración.
@@ -86,7 +111,55 @@ export function DemoProvider({ children }: { children: ReactNode }) {
   const [cash, setCash] = useState<CashSession>(() => createCashSession());
   const [toasts, setToasts] = useState<Toast[]>([]);
 
-  useEffect(() => setReady(true), []);
+  /** Número de la última venta sembrada: lo posterior se guarda entre recargas */
+  const baseSaleNumber = useRef(
+    sales.reduce((m, s) => Math.max(m, s.number), 0),
+  );
+
+  // Recuperar lo que se hizo antes de recargar
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        const saved = JSON.parse(raw) as Snapshot;
+        if (saved.day === todayKey()) {
+          setProducts(saved.products);
+          setTables(saved.tables);
+          setExpenses(saved.expenses);
+          setCash(saved.cash);
+          if (saved.newSales?.length) {
+            setSales((prev) => [
+              ...prev.filter((s) => s.number <= baseSaleNumber.current),
+              ...saved.newSales,
+            ]);
+          }
+        } else {
+          window.localStorage.removeItem(STORAGE_KEY);
+        }
+      }
+    } catch {
+      // Si el guardado está dañado, se sigue con los datos sembrados
+    }
+    setReady(true);
+  }, []);
+
+  // Guardar los cambios
+  useEffect(() => {
+    if (!ready) return;
+    try {
+      const snapshot: Snapshot = {
+        day: todayKey(),
+        products,
+        tables,
+        expenses,
+        cash,
+        newSales: sales.filter((s) => s.number > baseSaleNumber.current),
+      };
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot));
+    } catch {
+      // Sin espacio en el navegador: la demo sigue funcionando en memoria
+    }
+  }, [ready, products, tables, expenses, cash, sales]);
 
   const toast = useCallback((t: Omit<Toast, "id">) => {
     const id = uid();
@@ -230,13 +303,15 @@ export function DemoProvider({ children }: { children: ReactNode }) {
 
       setSales((prev) => [...prev, sale]);
 
-      // Descarga de inventario
+      // Descarga de inventario. El stock puede quedar en negativo: si llegó el
+      // surtido y se vendió antes de ingresarlo, la venta no se frena y las
+      // unidades faltantes se descuentan solas al registrar la entrada.
       setProducts((prev) =>
         prev.map((p) => {
           const sold = sale.items
             .filter((i) => i.productId === p.id)
             .reduce((s, i) => s + i.qty, 0);
-          return sold ? { ...p, stock: Math.max(0, p.stock - sold) } : p;
+          return sold ? { ...p, stock: p.stock - sold } : p;
         }),
       );
 
@@ -273,11 +348,10 @@ export function DemoProvider({ children }: { children: ReactNode }) {
     setProducts((prev) => prev.filter((p) => p.id !== productId));
   }, []);
 
+  /** Entrada de mercancía: si el producto venía en negativo, aquí cuadra solo. */
   const restock = useCallback((productId: string, units: number) => {
     setProducts((prev) =>
-      prev.map((p) =>
-        p.id === productId ? { ...p, stock: Math.max(0, p.stock + units) } : p,
-      ),
+      prev.map((p) => (p.id === productId ? { ...p, stock: p.stock + units } : p)),
     );
   }, []);
 
@@ -324,9 +398,19 @@ export function DemoProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const resetDemo = useCallback(() => {
+    try {
+      window.localStorage.removeItem(STORAGE_KEY);
+    } catch {
+      // sin acceso a localStorage: basta con reponer el estado en memoria
+    }
+    const freshSales = createSales();
+    baseSaleNumber.current = freshSales.reduce(
+      (m, s) => Math.max(m, s.number),
+      0,
+    );
     setProducts(createProducts());
     setTables(createTables());
-    setSales(createSales());
+    setSales(freshSales);
     setExpenses(createExpenses());
     setCash(createCashSession());
   }, []);

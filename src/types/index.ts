@@ -35,7 +35,12 @@ export interface Product {
   active: boolean;
 }
 
-export type StockState = "disponible" | "bajo" | "agotado";
+/**
+ * "negativo" = se vendió mercancía que todavía no se ha ingresado al sistema
+ * (llegó el surtido y se vendió el mismo día). Al registrar la entrada, esas
+ * unidades se descuentan solas y el producto vuelve a cuadrar.
+ */
+export type StockState = "disponible" | "bajo" | "agotado" | "negativo";
 
 export type TableStatus = "disponible" | "ocupada" | "por-pagar" | "reservada";
 

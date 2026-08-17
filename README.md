@@ -114,6 +114,8 @@ src/
 | Moneda | Pesos colombianos, formato `$ 25.000` |
 | Facturación | **No** hay facturación electrónica ni DIAN: se emite un comprobante interno que lo aclara al pie |
 | Datos | Generados con semilla fija: el historial de 90 días (ventas y gastos) es igual en cada carga |
+| Inventario | **Nunca bloquea una venta**: si no hay existencias, vende igual y el stock queda en negativo ("Por cuadrar"). Al registrar la entrada del surtido, esas unidades se descuentan solas |
+| Estado | Lo que se hace en la demo sobrevive a un F5 (se guarda en el navegador el mismo día). "Reiniciar demostración" lo borra |
 | Propinas | Se muestran aparte del neto: son del equipo, no del negocio |
 | Retiros | Los retiros de la propietaria no cuentan como gasto del bar |
 | Gráficos | SVG propio, sin librerías de charts; paleta validada para daltonismo |

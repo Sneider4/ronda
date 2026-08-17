@@ -112,18 +112,18 @@ export function ProductPicker({
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
         {visible.map((p) => {
           const state = stockState(p);
-          const disabled = state === "agotado";
+          // Aunque no haya existencias se puede vender: el inventario queda en
+          // negativo y cuadra cuando se registre la entrada del surtido.
+          const sinInventario = p.stock <= 0;
           const added = flash[p.id];
           return (
             <button
               key={p.id}
-              disabled={disabled}
               onClick={() => add(p.id)}
               className={[
                 "group relative flex flex-col rounded-xl bg-white p-3 text-left ring-1 transition-all duration-150",
-                disabled
-                  ? "cursor-not-allowed opacity-55 ring-slate-200"
-                  : "ring-slate-200 hover:-translate-y-0.5 hover:ring-brand-300 hover:shadow-md active:scale-[0.98]",
+                "ring-slate-200 hover:-translate-y-0.5 hover:ring-brand-300 hover:shadow-md active:scale-[0.98]",
+                sinInventario ? "ring-rose-200" : "",
                 added ? "ring-2 ring-emerald-400" : "",
               ].join(" ")}
             >
@@ -139,21 +139,27 @@ export function ProductPicker({
                 {state === "bajo" && (
                   <Badge tone="warning">Quedan {p.stock}</Badge>
                 )}
-                {state === "agotado" && <Badge tone="danger">Agotado</Badge>}
+                {state === "agotado" && <Badge tone="danger">Sin inventario</Badge>}
+                {state === "negativo" && (
+                  <Badge tone="danger">Faltan {Math.abs(p.stock)}</Badge>
+                )}
               </div>
               <p className="mt-2.5 line-clamp-2 text-[13.5px] leading-tight font-semibold text-slate-900">
                 {p.name}
               </p>
               <p className="mt-0.5 text-[11.5px] text-slate-500">{p.presentation}</p>
+              {sinInventario && (
+                <p className="mt-1 text-[11px] leading-tight font-medium text-rose-600">
+                  Se vende igual · queda por ingresar
+                </p>
+              )}
               <div className="mt-2.5 flex items-center justify-between">
                 <span className="tabular text-[15px] font-bold text-slate-900">
                   {money(p.price)}
                 </span>
-                {!disabled && (
-                  <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-100 text-slate-500 transition-colors group-hover:bg-brand-500 group-hover:text-ink-950">
-                    <Plus size={15} />
-                  </span>
-                )}
+                <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-100 text-slate-500 transition-colors group-hover:bg-brand-500 group-hover:text-ink-950">
+                  <Plus size={15} />
+                </span>
               </div>
             </button>
           );
