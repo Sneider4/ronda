@@ -59,8 +59,13 @@ export const HISTORY_DAYS = 90;
 
 /* ── Ventas ────────────────────────────────────────────────────────────────*/
 
-/** Ventas por día de la semana (0 = domingo) */
-const SALES_PER_WEEKDAY = [22, 9, 10, 14, 20, 30, 34];
+/**
+ * Ventas por día de la semana (0 = domingo).
+ * Un bar de barrio abierto toda la semana: los lunes y martes son flojos, el
+ * fin de semana concentra la venta. Aun el día más flojo tiene movimiento,
+ * para que la demostración no dependa del día en que se haga.
+ */
+const SALES_PER_WEEKDAY = [24, 14, 15, 18, 22, 30, 34];
 
 /** Distribución de la venta a lo largo de la noche */
 const HOUR_WEIGHTS: [string, number][] = [
@@ -229,7 +234,7 @@ export function createExpenses(): Expense[] {
         category: "proveedores",
         description: "Compra de cerveza",
         supplier: suppliers.cerveza,
-        amount: around(2100000, 380000),
+        amount: around(2400000, 380000),
         paymentMethod: pendiente ? "Transferencia" : "Transferencia",
         status: pendiente ? "Pendiente" : "Pagado",
         dueDateISO: pendiente
@@ -246,7 +251,7 @@ export function createExpenses(): Expense[] {
         category: "proveedores",
         description: "Compra de licores",
         supplier: suppliers.licores,
-        amount: around(920000, 190000),
+        amount: around(1050000, 190000),
         paymentMethod: "Efectivo",
         status: "Pagado",
         employeeId: "e-1",

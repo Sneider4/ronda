@@ -74,6 +74,26 @@ demostración** para volver al estado inicial antes de una nueva presentación.
 
 ---
 
+## Documentos para el cliente
+
+En `docs/` quedan dos archivos de Word listos para enviar o imprimir:
+
+| Archivo | Para qué |
+|---|---|
+| `Ronda - Manual de usuario.docx` | Guía completa del sistema, pantalla por pantalla, escrita para la propietaria |
+| `Ronda - Propuesta comercial.docx` | Propuesta con problema, solución, alcance, cronograma, precios y aceptación |
+
+Ambos se generan desde el repositorio y se pueden editar en Word:
+
+```bash
+npm run docs              # regenera los dos documentos
+npm run verificar-datos   # comprueba que las cifras cuadren entre pantallas
+```
+
+Antes de enviarlos hay que reemplazar los datos entre corchetes:
+`[Su nombre / empresa]`, `[teléfono]`, `[correo]`, `[enlace de la demostración]`,
+`[Nombre de la propietaria]`, `[Nombre del bar]` y `[Ciudad]`.
+
 ## Estructura del proyecto
 
 ```

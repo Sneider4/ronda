@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "docs": "node scripts/generar-manual.mjs && node scripts/generar-propuesta.mjs",
+    "verificar-datos": "tsx scripts/verificar-datos.ts"
   },
   "engines": {
     "node": ">=20"
@@ -22,7 +24,9 @@
     "@types/node": "^22.10.0",
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
+    "docx": "^9.7.1",
     "tailwindcss": "^4.3.3",
+    "tsx": "^4.23.12",
     "typescript": "^5.7.0"
   }
 }
