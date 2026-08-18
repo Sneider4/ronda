@@ -7,6 +7,7 @@ import { DEV, PRODUCTO } from "@/config";
 import { Sidebar } from "./Sidebar";
 import { Topbar } from "./Topbar";
 import { RoleGuard } from "./RoleGuard";
+import { HelpButton } from "./HelpButton";
 import { Toaster } from "@/components/ui/Toaster";
 
 export function AppShell({ children }: { children: ReactNode }) {
@@ -40,6 +41,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         </footer>
       </div>
 
+      <HelpButton />
       <Toaster />
     </div>
   );

@@ -13,8 +13,10 @@ const config = {
 export function Toaster() {
   const { toasts, dismissToast } = useDemo();
 
+  // El relleno inferior deja libre la esquina del botón de ayuda: los avisos
+  // se apilan por encima de él, no encima.
   return (
-    <div className="no-print pointer-events-none fixed inset-x-0 bottom-0 z-[60] flex flex-col items-center gap-2 p-4 sm:inset-x-auto sm:right-6 sm:bottom-6 sm:items-end">
+    <div className="no-print pointer-events-none fixed inset-x-0 bottom-0 z-[60] flex flex-col items-center gap-2 p-4 pb-20 sm:inset-x-auto sm:right-6 sm:bottom-6 sm:items-end sm:pb-20">
       {toasts.map((t) => {
         const c = config[t.variant];
         const Icon = c.icon;
