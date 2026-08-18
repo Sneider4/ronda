@@ -25,9 +25,19 @@ import {
   tabla,
 } from "./doc-lib.mjs";
 
-const PROVEEDOR = "[Su nombre / empresa]";
-const CONTACTO = "[teléfono] · [correo]";
-const ENLACE = "[enlace de la aplicación]";
+import { readFileSync } from "node:fs";
+
+const cfg = JSON.parse(
+  readFileSync(new URL("../src/config/contacto.json", import.meta.url), "utf8"),
+);
+const dev = cfg.desarrollador;
+const cli = cfg.cliente;
+
+const PROVEEDOR = dev.nombre || "[Su nombre / empresa]";
+const CONTACTO = [dev.telefono, dev.correo].filter(Boolean).join(" · ") || "[teléfono] · [correo]";
+const ENLACE = cfg.producto.url || "[enlace de la aplicación]";
+const CLIENTE = cli.propietaria || "[Nombre de la propietaria]";
+const NEGOCIO = cli.negocio || "[Nombre del bar]";
 
 const portada = [
   espacio(1400),
@@ -74,7 +84,7 @@ const portada = [
       { titulo: "", ancho: 6400 },
     ],
     [
-      ["Preparado para", "[Nombre de la propietaria] — [Nombre del bar]"],
+      ["Preparado para", `${CLIENTE} — ${NEGOCIO}`],
       ["Preparado por", PROVEEDOR],
       ["Contacto", CONTACTO],
       ["Versión del documento", "1.0"],

@@ -74,6 +74,29 @@ demostración** para volver al estado inicial antes de una nueva presentación.
 
 ---
 
+## Sus datos como desarrollador
+
+Todo sale de un solo archivo: **`src/config/contacto.json`**. Lo que escriba ahí
+aparece en tres lugares al tiempo:
+
+1. El **pie de página** de la aplicación ("Desarrollado por … · teléfono").
+2. La pantalla **Acerca del sistema** (`/acerca`), con sus datos, botón de
+   WhatsApp con mensaje ya escrito, correo y qué incluye / qué no incluye la
+   demostración. Se llega desde el menú lateral o desde el menú de su nombre.
+3. Los **documentos de Word** de `docs/`, al ejecutar `npm run docs`.
+
+```jsonc
+{
+  "desarrollador": { "nombre": "", "rol": "", "ciudad": "", "telefono": "",
+                     "whatsapp": "573001234567", "correo": "", "github": "" },
+  "producto":      { "nombre": "Ronda", "version": "1.0 · demostración",
+                     "url": "https://…" },   // enlace público de la demo
+  "cliente":       { "propietaria": "", "negocio": "", "ciudad": "" }
+}
+```
+
+El campo `whatsapp` va con indicativo y sin signos (`57` + número).
+
 ## Documentos para el cliente
 
 En `docs/` quedan dos archivos de Word listos para enviar o imprimir:

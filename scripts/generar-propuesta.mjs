@@ -3,7 +3,7 @@
  *   node scripts/generar-propuesta.mjs
  */
 
-import { writeFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import { AlignmentType, Document, Packer, Paragraph, TextRun } from "docx";
 import {
   COLORS,
@@ -25,12 +25,19 @@ import {
   tabla,
 } from "./doc-lib.mjs";
 
-const PROVEEDOR = "[Su nombre / empresa]";
-const CONTACTO = "[teléfono] · [correo]";
-const ENLACE = "[enlace de la demostración]";
-const CLIENTE = "[Nombre de la propietaria]";
-const NEGOCIO = "[Nombre del bar]";
-const CIUDAD = "[Ciudad]";
+const cfg = JSON.parse(
+  readFileSync(new URL("../src/config/contacto.json", import.meta.url), "utf8"),
+);
+const dev = cfg.desarrollador;
+const cli = cfg.cliente;
+
+const PROVEEDOR = dev.nombre || "[Su nombre / empresa]";
+const CONTACTO =
+  [dev.telefono, dev.correo].filter(Boolean).join(" · ") || "[teléfono] · [correo]";
+const ENLACE = cfg.producto.url || "[enlace de la demostración]";
+const CLIENTE = cli.propietaria || "[Nombre de la propietaria]";
+const NEGOCIO = cli.negocio || "[Nombre del bar]";
+const CIUDAD = cli.ciudad || dev.ciudad || "[Ciudad]";
 const FECHA = new Date().toLocaleDateString("es-CO", {
   day: "numeric",
   month: "long",

@@ -1,7 +1,9 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
+import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { DEV, PRODUCTO } from "@/config";
 import { Sidebar } from "./Sidebar";
 import { Topbar } from "./Topbar";
 import { RoleGuard } from "./RoleGuard";
@@ -23,8 +25,18 @@ export function AppShell({ children }: { children: ReactNode }) {
         >
           <RoleGuard>{children}</RoleGuard>
         </main>
-        <footer className="px-6 pb-8 text-center text-[12px] text-slate-400">
-          Ronda · Sistema de gestión para bares — versión de demostración
+        <footer className="flex flex-col items-center gap-1 px-6 pb-8 text-center text-[12px] text-slate-400">
+          <span>Ronda · Sistema de gestión para bares — {PRODUCTO.version}</span>
+          <span>
+            Desarrollado por{" "}
+            <Link
+              href="/acerca"
+              className="font-medium text-slate-500 underline-offset-2 hover:text-brand-700 hover:underline"
+            >
+              {DEV.nombre}
+            </Link>
+            {DEV.telefono ? ` · ${DEV.telefono}` : ""}
+          </span>
         </footer>
       </div>
 

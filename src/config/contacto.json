@@ -1,0 +1,23 @@
+{
+  "_instrucciones": "Edite este archivo con sus datos reales. Es la única fuente: alimenta el pie de página de la aplicación, la pantalla 'Acerca de' y los dos documentos de Word (npm run docs). Deje en blanco lo que no aplique.",
+  "desarrollador": {
+    "nombre": "Richard Malagón",
+    "rol": "Desarrollador de software",
+    "ciudad": "Bogotá D.C., Colombia",
+    "telefono": "300 000 0000",
+    "whatsapp": "573000000000",
+    "correo": "correo@ejemplo.com",
+    "sitio": "",
+    "github": "https://github.com/Sneider4"
+  },
+  "producto": {
+    "nombre": "Ronda",
+    "version": "1.0 · demostración",
+    "url": ""
+  },
+  "cliente": {
+    "propietaria": "",
+    "negocio": "",
+    "ciudad": ""
+  }
+}

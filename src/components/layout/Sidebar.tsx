@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { X } from "lucide-react";
+import { Info, X } from "lucide-react";
 import { Logo } from "@/components/ui/Logo";
 import { navGroups } from "./nav";
 import { useCurrentUser, useDemo } from "@/store/demo-store";
@@ -113,6 +113,20 @@ export function Sidebar({
       </nav>
 
       <div className="border-t border-white/10 p-3">
+        <Link
+          href="/acerca"
+          onClick={onClose}
+          className={[
+            "mb-2 flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors",
+            pathname.startsWith("/acerca")
+              ? "bg-white/10 text-white"
+              : "text-white/50 hover:bg-white/5 hover:text-white",
+          ].join(" ")}
+        >
+          <Info size={17} className="text-white/40" />
+          Acerca del sistema
+        </Link>
+
         <div className="rounded-xl bg-white/[0.06] p-3.5">
           <p className="text-[11px] font-medium tracking-wide text-white/45 uppercase">
             Consumo en curso

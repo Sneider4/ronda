@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import {
   Bell,
   ChevronDown,
+  Info,
   Menu,
   Repeat2,
   RotateCcw,
@@ -24,6 +25,7 @@ import { Badge } from "@/components/ui/Badge";
 export function Topbar({ onOpenMenu }: { onOpenMenu: () => void }) {
   const pathname = usePathname();
   const item = findNavItem(pathname);
+  const esAcerca = pathname.startsWith("/acerca");
   const { products, sales, cash, resetDemo, toast, setCurrentUserId } = useDemo();
   const { employee, role, can } = useCurrentUser();
 
@@ -55,10 +57,15 @@ export function Topbar({ onOpenMenu }: { onOpenMenu: () => void }) {
 
         <div className="min-w-0 flex-1">
           <h1 className="truncate text-[17px] font-semibold tracking-tight text-slate-900">
-            {item?.label ?? "Ronda"}
+            {item?.label ?? (esAcerca ? "Acerca del sistema" : "Ronda")}
           </h1>
           <p className="hidden truncate text-[12.5px] text-slate-500 sm:block">
-            {weekdayDate(new Date())} · {item?.description}
+            {weekdayDate(new Date())}
+            {item?.description
+              ? ` · ${item.description}`
+              : esAcerca
+                ? " · Quién lo desarrolla y cómo contactarlo"
+                : ""}
           </p>
         </div>
 
@@ -256,6 +263,14 @@ export function Topbar({ onOpenMenu }: { onOpenMenu: () => void }) {
                     </p>
                   </div>
                 </div>
+                <Link
+                  href="/acerca"
+                  onClick={() => setOpenMenu(null)}
+                  className="flex w-full items-center gap-2.5 border-t border-slate-100 px-4 py-3 text-left text-[13.5px] font-medium text-slate-700 transition-colors hover:bg-slate-50"
+                >
+                  <Info size={16} className="text-slate-400" />
+                  Acerca del sistema y contacto
+                </Link>
                 <button
                   onClick={() => {
                     resetDemo();
