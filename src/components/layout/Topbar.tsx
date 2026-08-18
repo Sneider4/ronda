@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import {
   Bell,
   ChevronDown,
+  FlaskConical,
   Info,
   Menu,
   Repeat2,
@@ -68,6 +69,16 @@ export function Topbar({ onOpenMenu }: { onOpenMenu: () => void }) {
                 : ""}
           </p>
         </div>
+
+        {/* Recordatorio permanente de que es una muestra, no el sistema real */}
+        <Link
+          href="/acerca"
+          title="Esta es una demostración con datos de ejemplo"
+          className="mr-1 hidden items-center gap-1.5 rounded-full bg-brand-50 px-2.5 py-1 text-[11.5px] font-semibold text-brand-800 ring-1 ring-brand-200 ring-inset transition-colors hover:bg-brand-100 sm:flex"
+        >
+          <FlaskConical size={13} />
+          Demostración
+        </Link>
 
         <div ref={wrapRef} className="flex items-center gap-1.5 sm:gap-2">
           <div className="hidden items-center gap-2 rounded-xl bg-slate-100/80 px-3 py-2 xl:flex">

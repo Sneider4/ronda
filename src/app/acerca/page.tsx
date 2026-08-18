@@ -5,6 +5,7 @@ import {
   ArrowUpRight,
   BadgeCheck,
   CheckCircle2,
+  FlaskConical,
   Github,
   Mail,
   MapPin,
@@ -35,7 +36,7 @@ const INCLUYE = [
 const NO_INCLUYE = [
   "Facturación electrónica ni reportes ante la DIAN",
   "Integración con datáfonos o pasarelas de pago",
-  "Equipos (computador, tablet o impresora) ni servicio de internet",
+  "Integración con plataformas de domicilios",
 ];
 
 export default function AcercaPage() {
@@ -46,6 +47,39 @@ export default function AcercaPage() {
 
   return (
     <div className="mx-auto max-w-4xl space-y-5">
+      {/* Aclaración: esto es una muestra, no el sistema definitivo */}
+      <Card className="border-brand-300 bg-brand-50/70">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-brand-500 text-ink-950">
+            <FlaskConical size={20} />
+          </span>
+          <div>
+            <Badge tone="brand" dot>
+              Versión de demostración
+            </Badge>
+            <h2 className="mt-2 text-[17px] font-semibold tracking-tight text-slate-900">
+              Esto es una muestra de cómo funcionaría el sistema en su bar
+            </h2>
+            <p className="mt-2 text-[13.5px] leading-relaxed text-slate-700">
+              Todo lo que ve se puede usar: abrir una mesa, tomar el pedido,
+              cobrar, imprimir el comprobante, revisar el inventario y ver el
+              balance del mes. Sin embargo,{" "}
+              <strong className="font-semibold text-slate-900">
+                los productos, precios, mesas, empleados y ventas son datos de
+                ejemplo
+              </strong>
+              : sirven para mostrar el funcionamiento, no corresponden a un
+              negocio real y ninguna operación mueve dinero.
+            </p>
+            <p className="mt-2 text-[13.5px] leading-relaxed text-slate-700">
+              En la versión definitiva se carga la carta real del bar con sus
+              precios, sus mesas y su equipo de trabajo, y la información queda
+              guardada de forma permanente y respaldada.
+            </p>
+          </div>
+        </div>
+      </Card>
+
       {/* Presentación */}
       <Card className="grain overflow-hidden border-0 bg-ink-950 p-0">
         <div className="flex flex-col gap-6 p-6 sm:p-8 lg:flex-row lg:items-center">

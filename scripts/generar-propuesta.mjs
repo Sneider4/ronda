@@ -239,8 +239,6 @@ const contenido = [
   espacio(),
   h3("No incluye"),
   bullet("Facturación electrónica ni reportes tributarios ante la DIAN."),
-  bullet("Equipos: computador, tablet, celular o impresora."),
-  bullet("Servicio de internet ni instalación de red."),
   bullet("Integración con datáfonos o pasarelas de pago."),
   bullet("Integración con plataformas de domicilios."),
   espacio(),
